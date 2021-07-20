@@ -9,28 +9,66 @@
 	<body>
 
 
-        <p align="center"><iframe style="border: 10px #19c221 solid;" src="https://photo360.pennoni.com/projects/br17/index.html" name="photo360" id="photo360" width="1000px" height="1000px" frameborder="1" marginwidth="0px" marginheight="0px" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
+        <p align="center"><iframe style="border: 10px #19c221 solid;" src="https://photo360.pennoni.com/projects/sr4/index.html" name="photo360" id="photo360" width="1700px" height="1000px" frameborder="1" marginwidth="0px" marginheight="0px" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
         <p align="center"   style="font-family:verdana">   
 
         <b><u>Load Photo360 Project</u></b>
         <br>
         <br>
 
-        <b>Photo360 /project/: </b><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/br17/index.html" style="width: 300px"></input><button type="button" onClick="loadPhoto360();">Load</button>
+        <b>Photo360 /project/: </b><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/sr4/index.html" style="width: 300px"></input><button type="button" onClick="loadPhoto360();">Load</button>
 
         <br>
         <br>
-        <b><u>Find nearest neighbor to given XYZ coordinates and target them from that node.</u></b>
+        <br>
+        <u><b>Find nearest neighbor to given XYZ coordinates and target XYZ from that node:</b></u>
         <br>
         <br>
 
+        <b>Format:</b>
+        <select name="cogo_format" id="cogo_format">
+            <option value="XYZ">XYZ</option>
+            <option value="PNEZD">PNEZD</option>
+            <option value="PENZD">PENZD</option>
+        </select>
+
+
+        <b>Delimiter:</b>
+        <select name="delimiter" id="delimiter">
+            <option value="Comma">Comma</option>
+            <option value="Space">Space</option>
+            <option value="Colon">Colon</option>
+        </select>
+
+        <br>
+
+        <input type="text" id="cogo_input" style="width: 250px" name="cogo_input"><input type="button" value="Go" onclick="parseInputsAndContinue()">
+
+        <br>
+        <br>
+
+        <!--
+        <button onclick="targetFromNearestNeighbor();">Move Closer</button> &nbsp; <button onclick="targetFromNearestNeighbor();">Move Farther</button>
+        -->
+        <br>
+        <br>
+
+        <button onclick="enableCrosshair();">Enable Crosshair</button> &nbsp; <button onclick="disableCrosshair();">Disable Crosshair</button>
+
+        <br>
+        <br>
+        <b><u>Alt:</u></b>
+        <br>
+        <br>
+
+        <!--
         <b>Target:   X: </b><input type="text" id="inputtargetx" style="width: 100px" value="1295837.927"> 
         <b>Y: </b><input type="text" id="inputtargety" style="width: 100px" value="469850.7971"> 
         <b>Z: </b><input type="text" id="inputtargetz" style="width: 100px" value="172.16">
 
 
-        <button onclick="targetFromNearestNeighbor(document.getElementById('inputtargetx').value, document.getElementById('inputtargety').value, document.getElementById('inputtargetz').value);">Target</button> &nbsp; <button onclick="enableCrosshair();">Enable Crosshair</button> &nbsp; <button onclick="disableCrosshair();">Disable Crosshair</button>
-
+        <button onclick="targetFromNearestNeighbor(0, document.getElementById('inputtargetx').value, document.getElementById('inputtargety').value, document.getElementById('inputtargetz').value);">Target</button> &nbsp;
+        -->
         &nbsp;
         &nbsp;
         &nbsp;
@@ -56,18 +94,66 @@
                 photo360.pano.setVariableValue("crosshair_display",false);
             }
 
+            function parseInputsAndContinue() {
+                // Establish Inputs
+    
+                let cogo_input_text = document.getElementById("cogo_input");
+                let cogo_input_value = cogo_input_text.value;
+
+                let cogo_format_text = document.getElementById("cogo_format");
+                let cogo_format_value = cogo_format_text.value;
+                
+                let delimiter_format_label = document.getElementById("delimiter");
+                let delimiter_value = delimiter_format_label.value;
+                
+                // Establish Character Definitions for Delimiter Labels
+                let inputX, inputY, inputZ;
+                let delimiter_character;
+            
+                if (delimiter_value == "Comma") delimiter_character = ","
+                if (delimiter_value == "Space") delimiter_character = " "
+                if (delimiter_value == "Colon") delimiter_character = ":"
+                if (delimiter_value == "Semicolon") delimiter_character = ";"	
+
+                // Parse input based on Cogo Format + Delimiter
+
+                if(cogo_format_value == "XYZ") {
+                    inputX = parseFloat(cogo_input_value.split(delimiter_character)[0]); 
+                    inputY = parseFloat(cogo_input_value.split(delimiter_character)[1]);
+                    inputZ = parseFloat(cogo_input_value.split(delimiter_character)[2]);
+                }
+            
+                if(cogo_format_value == "PENZD") {
+                    inputX = parseFloat(cogo_input_value.split(delimiter_character)[1]); 
+                    inputY = parseFloat(cogo_input_value.split(delimiter_character)[2]);
+                    inputZ = parseFloat(cogo_input_value.split(delimiter_character)[3]);
+                }  
+            
+                if(cogo_format_value == "PNEZD") {
+                    inputX = parseFloat(cogo_input_value.split(delimiter_character)[1]); 
+                    inputY = parseFloat(cogo_input_value.split(delimiter_character)[1]);
+                    inputZ = parseFloat(cogo_input_value.split(delimiter_character)[3]);
+                }
+
+                // now that our inputs are parsed, pass into targetFromNearestNeighbor.
+                targetFromNearestNeighbor(inputX, inputY, inputZ);
+
+            }
             
             function targetFromNearestNeighbor(E, N, Z) {
-                // create empty distances array for later
-                let distances = new Array();
 
+                var distances = new Array(); // create empty distances array for later.
+                //var currentPos = 0; // declare arbitrary position variable for the distances array.
+
+                // find the nearest neighbor and set up our array
+                
                 // use northing, easting, and elevation distances from the input (coordinates) to the destination (node) to determine which node is the closest. store info in an object.
                 for (i = 0; i < photo360.pano.getNodeIds().length; i = i + 1) {
 
                     let thisNode = photo360.pano.getNodeIds()[i];
-                    let destN = Number(photo360.pano.getNodeUserdata(thisNode).copyright); // store node northing in an easy-to-read variable
-                    let destE = Number(photo360.pano.getNodeUserdata(thisNode).source); // store node easting in an easy-to-read variable
-                    let destZ = Number(photo360.pano.getNodeUserdata(thisNode).author); // store node elevation in an easy-to-read variable
+                    let destN = parseFloat(photo360.pano.getNodeUserdata(thisNode).copyright); // store node northing in an easy-to-read variable
+                    let destE = parseFloat(photo360.pano.getNodeUserdata(thisNode).source); // store node easting in an easy-to-read variable
+                    let destZ = parseFloat(photo360.pano.getNodeUserdata(thisNode).author); // store node elevation in an easy-to-read variable
                     let nodeTitle = photo360.pano.getNodeUserdata(thisNode).title;
                     let customID = photo360.pano.getNodeUserdata(thisNode).customnodeid;
 
@@ -79,6 +165,10 @@
 
                     // calculate elevation distance
                     let diffZ = Z - destZ;
+
+                    let relativeX = E;
+                    let relativeY = N;
+                    let relativeZ = Z;
 
                     // use both of these distances to get the absolute distance between the two points with pythagorean thorem.
                     let distance2D = Math.sqrt((diffN * diffN) + (diffE * diffE));
@@ -99,17 +189,20 @@
                         'deltaX': diffE,
                         'deltaY': diffN,
                         'deltaZ': diffZ,
+                        'relativeX': relativeX,
+                        'relativeY':  relativeY,
+                        'relativeZ': relativeZ
                     }
 
                     // push this object to our array we created.
                     distances.push(output);
 
-                }
+                    // this makes use of a callback function to specifically sort through objects in the array by their distance value, lowest to highest.
+                    let sortByNearest = distances.sort((a, b) => {
+                        return (a.distance - b.distance);
+                    });
 
-                // this makes use of a callback function to specifically sort through objects in the array by their distance value, lowest to highest.
-                let sortByNearest = distances.sort((a, b) => {
-                    return (a.distance - b.distance);
-                });
+                }
 
                 // now that we sorted, the closest distance is in the first slot of the array. fetch this node's information.
                 let nearestNeighborNode = distances[0].node;
@@ -136,10 +229,81 @@
                 // Go to our nearest neighbor
                 photo360.pano.openNext("{" + nearestNeighborNode + "}");
 
-                let deltaX = distances[0].deltaX;
-                let deltaY = distances[0].deltaY;
-                let deltaZ = distances[0].deltaZ;
-                let distance2D = distances[0].distance2D;
+                // set our current distances array index to 0 since we're at the nearest neighbor.
+                //currentPos = 0;
+
+                // calculate pan and tilt for nearest neighbor aiming at input
+                calculatePanTilt(distances);
+
+                // let deltaX = distances[0].deltaX;
+                // let deltaY = distances[0].deltaY;
+                // let deltaZ = distances[0].deltaZ;
+                // let distance2D = distances[0].distance2D;
+
+                // // calculate panorama pan from observer (current node) to target (input)
+                // let targetPan = (Math.atan2(deltaX, -(deltaY)) * (180 / Math.PI) + 180);
+
+                // // calculate panorama tilt from observer to target
+                // let calcTilt = (Math.atan2(deltaZ, distance2D) * (180 / Math.PI));
+
+                // // 360: set pano pan and tilt to look at our input from nearest neighbor.
+                // photo360.pano.setPanNorth(targetPan);
+                // photo360.pano.setTilt(calcTilt);
+
+                
+                // move potree to our nearest neighbor node if we want
+                //photo360.potree.viewer.scene.view.position.set(distances[0].easting, distances[0].northing, distances[0].elevation);
+
+                // orient potree to match p2vr
+                photo360.potree.viewer.scene.view.lookAt(E, N, Z);
+
+                
+                // // move to next nearest neighbor using our distances array
+
+                // // only execute if our array has already been populated by targetFromNearestNeighbor().
+                // // AND
+                // // only execute if we aren't already at the nearest neighbor.
+                // if (distances.length > 0 && currentPos > -1) {
+
+                //     // increment our array position.
+                //     currentPos = currentPos - 1;
+                //     alert(String(distances[currentPos].node));
+
+                //     // go to the node that matches that array position.
+                //     photo360.pano.openNext("{" + String(distances[currentPos].node) + "}");
+
+                //     // orient this node to the input coordinates.
+                //     calculatePanTilt(distances, distances[currentPos].relativeX, distances[currentPos].relativeY, distances[currentPos].relativeZ);
+                // }
+
+
+                // // move to next furthest neighbor using our distances array
+
+                // // only execute if our array has already been populated by targetFromNearestNeighbor().
+                // // AND
+                // // only execute if we aren't already at the farthest neighbor.
+                // if (distances.length > 0 && currentPos < distances.length) {
+
+                //     //decrement our array position.
+                //     currentPos = currentPos + 1;
+                //     alert(String(distances[currentPos].node));
+
+                //     // go to the node that matches that array position.
+                //     photo360.pano.openNext("{" + String(distances[currentPos].node) + "}");
+
+                //     // orient this node to the input coordinates.
+                //     calculatePanTilt(distances, distances[currentPos].relativeX, distances[currentPos].relativeY, distances[currentPos].relativeZ);
+                // }
+
+            }
+
+            // aim the given node at the provided input coordinates.
+            function calculatePanTilt(array) {
+
+                let deltaX = array[0].deltaX;
+                let deltaY = array[0].deltaY;
+                let deltaZ = array[0].deltaZ;
+                let distance2D = array[0].distance2D;
 
                 // calculate panorama pan from observer (current node) to target (input)
                 let targetPan = (Math.atan2(deltaX, -(deltaY)) * (180 / Math.PI) + 180);
@@ -150,12 +314,8 @@
                 // 360: set pano pan and tilt to look at our input from nearest neighbor.
                 photo360.pano.setPanNorth(targetPan);
                 photo360.pano.setTilt(calcTilt);
-                        
-                // orient potree to match p2vr
-                photo360.potree.viewer.scene.view.lookAt(E, N, Z);
 
             }
-
 
         </script>
     </body>

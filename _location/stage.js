@@ -1,6 +1,5 @@
-/////////////////////////
-/// Begin Kyle's Code ///
-/////////////////////////
+/* This code calculates the nearest neighbor node and distance to that node relative to a given coordinate input.
+    Written by Kyle Hessel. */
 
 // coordinate inputs
 let inputN = 469834.013;
@@ -21,7 +20,7 @@ for (i = 0; i < pano.getNodeIds().length; i = i + 1) {
     let customID = pano.getNodeUserdata(thisNode).customnodeid;
 
     // calculate northing distance
-    let diffN = inputN - destN; // i originally wrapped this in Math.abs(), but these values get squared below so it doesn't matter.
+    let diffN = inputN - destN;
 
     // calculate easting distance
     let diffE = inputE - destE;
@@ -68,7 +67,7 @@ let nearestNeighborEasting = String(distances[0].easting);
 let nearestNeighborElevation = String(distances[0].elevation);
 
 // print that node ID. this is our nearest neighbor!
-console.log("Nearest node: " + nearestNeighbor);
+console.log("Nearest node: " + nearestNeighborNode);
 
 // print its title, coordinates, etc, too
 console.log("Custom ID: " + nearestNeighborCustom);
@@ -96,41 +95,5 @@ for (i = 0; i < pano.getNodeIds().length; i = i + 1) {
 /// Begin Cory & Jeff's Code ///
 ////////////////////////////////
 
-// Version 2.0 with improvements by Jeff (uses ATAN, less code / variables)
-// I made some further tweaks to work in my code and further optimize some things. V3? ~Kyle
 
-// Get target input from text boxes
-var TargetX = document.getElementById("inputtargetx").value;
-var TargetY = document.getElementById("inputtargety").value;
-var TargetZ = document.getElementById("inputtargetz").value;
-    
-// Get setup position from Photo360 panorama node
-var ObserverX = parseFloat(photo360.pano.getNodeUserdata().source);
-var ObserverY = parseFloat(photo360.pano.getNodeUserdata().copyright);
-var ObserverZ = parseFloat(photo360.pano.getNodeUserdata().author);
-
-// Calculate deltas
-var deltaX = TargetX - ObserverX;
-var deltaY = TargetY - ObserverY;
-var deltaZ = TargetZ - ObserverZ;
-
-//Calculate Panorama Pan from observer to target
-var targetPan = Math.atan2(-(TargetY - ObserverY), TargetX - ObserverX) * 180 / Math.PI;
-
-
-//Calculate Horizontal distance 
-var deltaHorizontal = Math.sqrt(Math.pow(TargetX - ObserverX, 2) + Math.pow(TargetY - ObserverY, 2));
-    
-//Calculate 3d distance 
-var delta3D = Math.sqrt(Math.pow(TargetX - ObserverX, 2) + Math.pow(TargetY - ObserverY, 2) + Math.pow(TargetZ - ObserverZ, 2));
-
-//Calculate Panorama Tilt from observer to target
-var calcTilt = (Math.atan2(TargetZ - ObserverZ, deltaHorizontal) * (180 / Math.PI));
-
-// 360: Set pano Pan
-photo360.pano.setPanNorth(targetPan);
-photo360.pano.setTilt(calcTilt);
-    
-// 3D: Set target
-photo360.potree.viewer.scene.view.lookAt(TargetX,TargetY,TargetZ);
 

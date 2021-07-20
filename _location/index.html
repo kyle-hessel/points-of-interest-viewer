@@ -1,0 +1,162 @@
+<!--HTML originally written by Cory Hessel,
+    modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Photo360 Nearest Neighbor & Target XYZ demo</title>
+	</head>
+	<body>
+
+
+        <p align="center"><iframe style="border: 10px #19c221 solid;" src="https://photo360.pennoni.com/projects/br17/index.html" name="photo360" id="photo360" width="1000px" height="1000px" frameborder="1" marginwidth="0px" marginheight="0px" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
+        <p align="center"   style="font-family:verdana">   
+
+        <b><u>Load Photo360 Project</u></b>
+        <br>
+        <br>
+
+        <b>Photo360 /project/: </b><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/br17/index.html" style="width: 300px"></input><button type="button" onClick="loadPhoto360();">Load</button>
+
+        <br>
+        <br>
+        <b><u>Find nearest neighbor to given XYZ coordinates and target them from that node.</u></b>
+        <br>
+        <br>
+
+        <b>Target:   X: </b><input type="text" id="inputtargetx" style="width: 100px" value="1295837.927"> 
+        <b>Y: </b><input type="text" id="inputtargety" style="width: 100px" value="469850.7971"> 
+        <b>Z: </b><input type="text" id="inputtargetz" style="width: 100px" value="172.16">
+
+
+        <button onclick="targetFromNearestNeighbor(document.getElementById('inputtargetx').value, document.getElementById('inputtargety').value, document.getElementById('inputtargetz').value);">Target</button> &nbsp; <button onclick="enableCrosshair();">Enable Crosshair</button> &nbsp; <button onclick="disableCrosshair();">Disable Crosshair</button>
+
+        &nbsp;
+        &nbsp;
+        &nbsp;
+
+
+        <script>
+
+            function loadPhoto360(){
+            document.getElementById("photo360").src = document.getElementById("inputurl").value;
+            }
+
+
+            function updateCoordinates(){
+            document.getElementById("currentcoordinates").value = (String.prototype.concat( (String((potree.viewer.scene.getActiveCamera().position.x).toFixed(4))),",",(String((potree.viewer.scene.getActiveCamera().position.y).toFixed(4))),",",(String((potree.viewer.scene.getActiveCamera().position.z).toFixed(4))) ));
+            }
+
+            function enableCrosshair() {
+                photo360.pano.setVariableValue("crosshair_display",true);
+                photo360.pano.setVariableValue("compass_visible",true);
+            }
+
+            function disableCrosshair() {
+                photo360.pano.setVariableValue("crosshair_display",false);
+            }
+
+            
+            function targetFromNearestNeighbor(E, N, Z) {
+                // create empty distances array for later
+                let distances = new Array();
+
+                // use northing, easting, and elevation distances from the input (coordinates) to the destination (node) to determine which node is the closest. store info in an object.
+                for (i = 0; i < photo360.pano.getNodeIds().length; i = i + 1) {
+
+                    let thisNode = photo360.pano.getNodeIds()[i];
+                    let destN = Number(photo360.pano.getNodeUserdata(thisNode).copyright); // store node northing in an easy-to-read variable
+                    let destE = Number(photo360.pano.getNodeUserdata(thisNode).source); // store node easting in an easy-to-read variable
+                    let destZ = Number(photo360.pano.getNodeUserdata(thisNode).author); // store node elevation in an easy-to-read variable
+                    let nodeTitle = photo360.pano.getNodeUserdata(thisNode).title;
+                    let customID = photo360.pano.getNodeUserdata(thisNode).customnodeid;
+
+                    // calculate northing distance
+                    let diffN = N - destN;
+
+                    // calculate easting distance
+                    let diffE = E - destE;
+
+                    // calculate elevation distance
+                    let diffZ = Z - destZ;
+
+                    // use both of these distances to get the absolute distance between the two points with pythagorean thorem.
+                    let distance2D = Math.sqrt((diffN * diffN) + (diffE * diffE));
+
+                    // use our elevation difference and our hypotneuse from the last line to get our 3D (true) distance, simply called distance.
+                    let distance = Math.sqrt((diffZ * diffZ) + (distance2D * distance2D));
+
+                    // store this information in a new object that has our nearest neighbor and other related information.
+                    let output = {
+                        'node': thisNode,
+                        'custom': customID,
+                        'title': nodeTitle,
+                        'distance2D': distance2D,
+                        'distance': distance,
+                        'northing': destN,
+                        'easting': destE,
+                        'elevation': destZ,
+                        'deltaX': diffE,
+                        'deltaY': diffN,
+                        'deltaZ': diffZ,
+                    }
+
+                    // push this object to our array we created.
+                    distances.push(output);
+
+                }
+
+                // this makes use of a callback function to specifically sort through objects in the array by their distance value, lowest to highest.
+                let sortByNearest = distances.sort((a, b) => {
+                    return (a.distance - b.distance);
+                });
+
+                // now that we sorted, the closest distance is in the first slot of the array. fetch this node's information.
+                let nearestNeighborNode = distances[0].node;
+                let nearestNeighborCustom = distances[0].custom;
+                let nearestNeighborTitle = distances[0].title;
+                let nearestNeighborDistance2D = String(distances[0].distance2D.toFixed(4));
+                let nearestNeighborDistance = String(distances[0].distance.toFixed(4));
+                let nearestNeighborNorthing = String(distances[0].northing);
+                let nearestNeighborEasting = String(distances[0].easting);
+                let nearestNeighborElevation = String(distances[0].elevation);
+
+                // print that node ID. this is our nearest neighbor!
+                console.log("Nearest node: " + nearestNeighborNode);
+
+                // print its title, coordinates, etc, too
+                console.log("Custom ID: " + nearestNeighborCustom);
+                console.log("Title: " + nearestNeighborTitle);
+                console.log("Distance from input: " + nearestNeighborDistance);
+                console.log("Distance (2D only): " + nearestNeighborDistance2D);
+                console.log("Northing: " + nearestNeighborNorthing);
+                console.log("Easting: " + nearestNeighborEasting);
+                console.log("Elevation: " + nearestNeighborElevation);
+
+                // Go to our nearest neighbor
+                photo360.pano.openNext("{" + nearestNeighborNode + "}");
+
+                let deltaX = distances[0].deltaX;
+                let deltaY = distances[0].deltaY;
+                let deltaZ = distances[0].deltaZ;
+                let distance2D = distances[0].distance2D;
+
+                // calculate panorama pan from observer (current node) to target (input)
+                let targetPan = (Math.atan2(deltaX, -(deltaY)) * (180 / Math.PI) + 180);
+
+                // calculate panorama tilt from observer to target
+                let calcTilt = (Math.atan2(deltaZ, distance2D) * (180 / Math.PI));
+
+                // 360: set pano pan and tilt to look at our input from nearest neighbor.
+                photo360.pano.setPanNorth(targetPan);
+                photo360.pano.setTilt(calcTilt);
+                        
+                // orient potree to match p2vr
+                photo360.potree.viewer.scene.view.lookAt(E, N, Z);
+
+            }
+
+
+        </script>
+    </body>
+</html>

@@ -47,9 +47,8 @@
         <br>
         <br>
 
-        <!--
-        <button onclick="targetFromNearestNeighbor();">Move Closer</button> &nbsp; <button onclick="targetFromNearestNeighbor();">Move Farther</button>
-        -->
+        <!-- New coordinate inputs -->
+        <button onclick="nextNearestNeighbor();">Move Closer</button> &nbsp; <button onclick="nextFurthestNeighbor();">Move Farther</button>
         <br>
         <br>
 
@@ -61,11 +60,10 @@
         <br>
         <br>
 
-        <!--
+        <!-- old coordinate inputs
         <b>Target:   X: </b><input type="text" id="inputtargetx" style="width: 100px" value="1295837.927"> 
         <b>Y: </b><input type="text" id="inputtargety" style="width: 100px" value="469850.7971"> 
         <b>Z: </b><input type="text" id="inputtargetz" style="width: 100px" value="172.16">
-
 
         <button onclick="targetFromNearestNeighbor(0, document.getElementById('inputtargetx').value, document.getElementById('inputtargety').value, document.getElementById('inputtargetz').value);">Target</button> &nbsp;
         -->
@@ -75,6 +73,8 @@
 
 
         <script>
+
+            let dummyStruct;
 
             function loadPhoto360(){
             document.getElementById("photo360").src = document.getElementById("inputurl").value;
@@ -142,8 +142,9 @@
             
             function targetFromNearestNeighbor(E, N, Z) {
 
-                var distances = new Array(); // create empty distances array for later.
-                //var currentPos = 0; // declare arbitrary position variable for the distances array.
+                // needs to stay declared inside
+                let distances = new Array(); // create empty distances array for later.
+                let currentPos = 0; // declare arbitrary position variable for the distances array.
 
                 // find the nearest neighbor and set up our array
                 
@@ -157,18 +158,14 @@
                     let nodeTitle = photo360.pano.getNodeUserdata(thisNode).title;
                     let customID = photo360.pano.getNodeUserdata(thisNode).customnodeid;
 
-                    // calculate northing distance
+                    // calculate northing distance from input
                     let diffN = N - destN;
 
-                    // calculate easting distance
+                    // calculate easting distance input
                     let diffE = E - destE;
 
-                    // calculate elevation distance
+                    // calculate elevation distance input
                     let diffZ = Z - destZ;
-
-                    let relativeX = E;
-                    let relativeY = N;
-                    let relativeZ = Z;
 
                     // use both of these distances to get the absolute distance between the two points with pythagorean thorem.
                     let distance2D = Math.sqrt((diffN * diffN) + (diffE * diffE));
@@ -189,9 +186,9 @@
                         'deltaX': diffE,
                         'deltaY': diffN,
                         'deltaZ': diffZ,
-                        'relativeX': relativeX,
-                        'relativeY':  relativeY,
-                        'relativeZ': relativeZ
+                        'relativeX': E,
+                        'relativeY':  N,
+                        'relativeZ': Z
                     }
 
                     // push this object to our array we created.
@@ -230,26 +227,10 @@
                 photo360.pano.openNext("{" + nearestNeighborNode + "}");
 
                 // set our current distances array index to 0 since we're at the nearest neighbor.
-                //currentPos = 0;
+                currentPos = 0;
 
                 // calculate pan and tilt for nearest neighbor aiming at input
-                calculatePanTilt(distances);
-
-                // let deltaX = distances[0].deltaX;
-                // let deltaY = distances[0].deltaY;
-                // let deltaZ = distances[0].deltaZ;
-                // let distance2D = distances[0].distance2D;
-
-                // // calculate panorama pan from observer (current node) to target (input)
-                // let targetPan = (Math.atan2(deltaX, -(deltaY)) * (180 / Math.PI) + 180);
-
-                // // calculate panorama tilt from observer to target
-                // let calcTilt = (Math.atan2(deltaZ, distance2D) * (180 / Math.PI));
-
-                // // 360: set pano pan and tilt to look at our input from nearest neighbor.
-                // photo360.pano.setPanNorth(targetPan);
-                // photo360.pano.setTilt(calcTilt);
-
+                calculatePanTilt(distances, currentPos);
                 
                 // move potree to our nearest neighbor node if we want
                 //photo360.potree.viewer.scene.view.position.set(distances[0].easting, distances[0].northing, distances[0].elevation);
@@ -257,53 +238,80 @@
                 // orient potree to match p2vr
                 photo360.potree.viewer.scene.view.lookAt(E, N, Z);
 
-                
-                // // move to next nearest neighbor using our distances array
-
-                // // only execute if our array has already been populated by targetFromNearestNeighbor().
-                // // AND
-                // // only execute if we aren't already at the nearest neighbor.
-                // if (distances.length > 0 && currentPos > -1) {
-
-                //     // increment our array position.
-                //     currentPos = currentPos - 1;
-                //     alert(String(distances[currentPos].node));
-
-                //     // go to the node that matches that array position.
-                //     photo360.pano.openNext("{" + String(distances[currentPos].node) + "}");
-
-                //     // orient this node to the input coordinates.
-                //     calculatePanTilt(distances, distances[currentPos].relativeX, distances[currentPos].relativeY, distances[currentPos].relativeZ);
-                // }
-
-
-                // // move to next furthest neighbor using our distances array
-
-                // // only execute if our array has already been populated by targetFromNearestNeighbor().
-                // // AND
-                // // only execute if we aren't already at the farthest neighbor.
-                // if (distances.length > 0 && currentPos < distances.length) {
-
-                //     //decrement our array position.
-                //     currentPos = currentPos + 1;
-                //     alert(String(distances[currentPos].node));
-
-                //     // go to the node that matches that array position.
-                //     photo360.pano.openNext("{" + String(distances[currentPos].node) + "}");
-
-                //     // orient this node to the input coordinates.
-                //     calculatePanTilt(distances, distances[currentPos].relativeX, distances[currentPos].relativeY, distances[currentPos].relativeZ);
-                // }
+                getOrSetNodes("set", currentPos, distances);
 
             }
 
-            // aim the given node at the provided input coordinates.
-            function calculatePanTilt(array) {
+            function getOrSetNodes(type, pos = 0, arr = []) {
 
-                let deltaX = array[0].deltaX;
-                let deltaY = array[0].deltaY;
-                let deltaZ = array[0].deltaZ;
-                let distance2D = array[0].distance2D;
+                if (type === "set") {
+
+                    dummyStruct = {
+                        "setupPosition": pos,
+                        "arrayOfNodes": arr
+                    }
+
+                } else if (type === "getArr") {
+                    return dummyStruct.arrayOfNodes;
+                } else if (type === "getPos") {
+                    return dummyStruct.setupPosition;
+                }
+
+            }
+
+            // move to next nearest neighbor using our distances array
+            function nextNearestNeighbor() {
+
+                distances = getOrSetNodes("getArr");
+                currentPos = getOrSetNodes("getPos");
+
+                // only execute if our array has already been populated by targetFromNearestNeighbor().
+                // AND
+                // only execute if we aren't already at the nearest neighbor.
+                if (distances.length > 0 && currentPos > 0) {
+
+                    // increment our array position.
+                    currentPos = currentPos - 1;
+                    getOrSetNodes("set", currentPos, distances);
+
+                    // go to the node that matches that array position.
+                    photo360.pano.openNext("{" + String(distances[currentPos].node) + "}");
+
+                    // orient this node to the input coordinates.
+                    calculatePanTilt(distances, currentPos);
+                }
+            }
+
+            // move to next furthest neighbor using our distances array
+            function nextFurthestNeighbor() {
+
+                distances = getOrSetNodes("getArr");
+                currentPos = getOrSetNodes("getPos");
+
+                // only execute if our array has already been populated by targetFromNearestNeighbor().
+                // AND
+                // only execute if we aren't already at the farthest neighbor.
+                if (distances.length > 0 && currentPos < distances.length) {
+
+                    //decrement our array position.
+                    currentPos = currentPos + 1;
+                    getOrSetNodes("set", currentPos, distances);
+
+                    // go to the node that matches that array position.
+                    photo360.pano.openNext("{" + String(distances[currentPos].node) + "}");
+
+                    // orient this node to the input coordinates.
+                    calculatePanTilt(distances, currentPos);
+                }
+            }
+
+            // aim the given node at the provided input coordinates.
+            function calculatePanTilt(array, pos) {
+
+                let deltaX = array[pos].deltaX;
+                let deltaY = array[pos].deltaY;
+                let deltaZ = array[pos].deltaZ;
+                let distance2D = array[pos].distance2D;
 
                 // calculate panorama pan from observer (current node) to target (input)
                 let targetPan = (Math.atan2(deltaX, -(deltaY)) * (180 / Math.PI) + 180);

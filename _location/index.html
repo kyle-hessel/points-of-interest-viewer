@@ -1,13 +1,22 @@
-<!--HTML originally written by Cory Hessel,
-    modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
-
 <!DOCTYPE html>
+
+<!--HTML originally written by Cory Hessel,
+modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
+
 <html>
 	<head>
-		<title>Photo360 Nearest Neighbor & Target XYZ demo</title>
-	</head>
-	<body>
 
+		<title>Photo360 Nearest Neighbor & Target XYZ demo</title>
+
+	</head>
+
+	<body align="center">
+        
+        <!--include minified papa parse source code-->
+        <script src="papaparse.min.js"></script>
+        <!--include heihō source code and styling-->
+        <link rel="stylesheet" href="heiho.css" />
+        <script src="heiho.js"></script>
 
         <p align="center"><iframe style="border: 10px #19c221 solid;" src="https://photo360.pennoni.com/projects/sr4/index.html" name="photo360" id="photo360" width="1700px" height="1000px" frameborder="1" marginwidth="0px" marginheight="0px" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
         <p align="center"   style="font-family:verdana">   
@@ -20,9 +29,46 @@
 
         <br>
         <br>
+
+        <button onclick="enableCrosshair();">Enable Crosshair</button> &nbsp; <button onclick="disableCrosshair();">Disable Crosshair</button>
+
+        <br>
         <br>
         <u><b>Find nearest neighbor to given XYZ coordinates and target XYZ from that node:</b></u>
         <br>
+        <br>
+
+        <!-- Input a dataset (CSV) -->
+        <h3>Input a dataset of coordinates</h3>
+
+        <label for="csv_importer">Import .CSV</label>
+        <br>
+        <input type="file" name="csv_importer" id="csv_importer" accept=".csv"><input type="button" value="Import" onclick="parseFileAndContinue();">
+
+        <br>
+
+        <b>Format:</b>
+        <select name="cogo_format_set" id="cogo_format_set">
+            <option value="PENZD">PENZD</option>
+            <option value="PNEZD">PNEZD</option>
+            <option value="XYZ">XYZ</option>
+        </select>
+
+
+        <b>Delimiter: (autodetected)</b>
+
+        <!--listbox should go here-->
+
+
+
+        <br>
+        <br>
+
+        <!--Input a single point-->
+        <h3>Input a single coordinate</h3>
+
+        <input type="text" id="cogo_input" style="width: 250px" name="cogo_input"><input type="button" value="Go" onclick="parseInputsAndContinue()">
+
         <br>
 
         <b>Format:</b>
@@ -39,28 +85,19 @@
             <option value="Space">Space</option>
             <option value="Colon">Colon</option>
         </select>
-
-        <br>
-
-        <input type="text" id="cogo_input" style="width: 250px" name="cogo_input"><input type="button" value="Go" onclick="parseInputsAndContinue()">
-
         <br>
         <br>
-
-        <!-- New coordinate inputs -->
+        <br>
         <button onclick="nextNearestNeighbor();">Move Closer</button> &nbsp; <button onclick="nextFurthestNeighbor();">Move Farther</button>
         <br>
         <br>
 
-        <button onclick="enableCrosshair();">Enable Crosshair</button> &nbsp; <button onclick="disableCrosshair();">Disable Crosshair</button>
 
-        <br>
-        <br>
+        <!-- old coordinate inputs
         <b><u>Alt:</u></b>
         <br>
         <br>
 
-        <!-- old coordinate inputs
         <b>Target:   X: </b><input type="text" id="inputtargetx" style="width: 100px" value="1295837.927"> 
         <b>Y: </b><input type="text" id="inputtargety" style="width: 100px" value="469850.7971"> 
         <b>Z: </b><input type="text" id="inputtargetz" style="width: 100px" value="172.16">
@@ -71,7 +108,6 @@
         &nbsp;
         &nbsp;
 
-
         <script>
 
             let dummyStruct;
@@ -81,9 +117,12 @@
             }
 
 
+            /* not currently being used
+
             function updateCoordinates(){
             document.getElementById("currentcoordinates").value = (String.prototype.concat( (String((potree.viewer.scene.getActiveCamera().position.x).toFixed(4))),",",(String((potree.viewer.scene.getActiveCamera().position.y).toFixed(4))),",",(String((potree.viewer.scene.getActiveCamera().position.z).toFixed(4))) ));
             }
+            */
 
             function enableCrosshair() {
                 photo360.pano.setVariableValue("crosshair_display",true);
@@ -93,6 +132,74 @@
             function disableCrosshair() {
                 photo360.pano.setVariableValue("crosshair_display",false);
             }
+
+            // parses CSV file
+            function parseFileAndContinue() {
+
+                // papa parse modified config object: see https://www.papaparse.com/docs#config
+                // this tells papa parse how to treat the file.
+                config = {
+                    delimiter: "",	// auto-detect
+                    newline: "",	// auto-detect
+                    quoteChar: '"',
+                    escapeChar: '"',
+                    header: false,
+                    transformHeader: undefined,
+                    dynamicTyping: false,
+                    preview: 0,
+                    encoding: "",
+                    worker: false,
+                    comments: false,
+                    step: undefined,
+                    //print out data to the console and return it. papa parse doesn't do this by default. 
+                    complete: function(output) {
+
+                        // call Heiho to display our parsed data in a table.
+                        Heiho(output.data, { title: 'Points of interest' });
+                        console.log(output);
+
+                    },
+                    error: undefined,
+                    download: false,
+                    downloadRequestHeaders: undefined,
+                    downloadRequestBody: undefined,
+                    skipEmptyLines: false,
+                    chunk: undefined,
+                    chunkSize: undefined,
+                    fastMode: undefined,
+                    beforeFirstChunk: undefined,
+                    withCredentials: undefined,
+                    transform: undefined,
+                    delimitersToGuess: [',', '\t', '|', ';', Papa.RECORD_SEP, Papa.UNIT_SEP]
+                }
+
+                // establish inputs
+                let cogo_input_field = document.getElementById("csv_importer");
+                let cogo_input_text = cogo_input_field.files[0]; // don't do files[x].name, papa parse expects an object. (or.. blob in this case)
+
+                // debug
+                //console.log(cogo_input_field);
+                //console.log(cogo_input_field.files);
+                //console.log(cogo_input_text);
+                //console.log(cogo_input_text.name);
+                
+                // store our formatting type (e.g. PENZD)
+                let cogo_format_text = document.getElementById("cogo_format_set");
+                let cogo_format_value = cogo_format_text.value;
+                console.log(cogo_format_value);
+
+                // store our parsed CSV into a variable we can work with.
+                //let dataset = 
+                Papa.parse(cogo_input_text, config); //see https://www.papaparse.com/docs ('Parse Local Files'). filetypes: parse(blob, object)
+
+                //displayTable(dataset, cogo_format_value);
+
+            }
+
+            //displays CSV file in a table
+            // function displayTable(dataset, type) {
+            //     Heiho(dataset, { title: 'Points of interest'});
+            // }
 
             function parseInputsAndContinue() {
                 // Establish Inputs

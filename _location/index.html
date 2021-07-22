@@ -11,26 +11,27 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
 	</head>
 
 	<body align="center">
-        
-        <!--include minified papa parse source code-->
-        <script src="papaparse.min.js"></script>
-        <!--include heihō source code and styling-->
-        <link rel="stylesheet" href="heiho.css" />
-        <script src="heiho.js"></script>
 
-        <p align="center"><iframe style="border: 10px #19c221 solid;" src="https://photo360.pennoni.com/projects/sr4/index.html" name="photo360" id="photo360" width="1700px" height="1000px" frameborder="1" marginwidth="0px" marginheight="0px" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
+        <p align="center"><iframe style="border: 10px #19c221 solid;" src="https://photo360.pennoni.com/projects/br17/index.html" name="photo360" id="photo360" width="1700px" height="1000px" frameborder="1" marginwidth="0px" marginheight="0px" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
         <p align="center"   style="font-family:verdana">   
 
         <b><u>Load Photo360 Project</u></b>
         <br>
         <br>
 
-        <b>Photo360 /project/: </b><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/sr4/index.html" style="width: 300px"></input><button type="button" onClick="loadPhoto360();">Load</button>
+        <b>Photo360 /project/: </b><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/br17/index.html" style="width: 300px"></input><button type="button" onClick="loadPhoto360();">Load</button>
 
         <br>
         <br>
 
         <button onclick="enableCrosshair();">Enable Crosshair</button> &nbsp; <button onclick="disableCrosshair();">Disable Crosshair</button>
+
+        <br>
+        <br>
+
+        <button onclick="nextNearestNeighbor();">Move Closer</button> &nbsp; <button onclick="nextFurthestNeighbor();">Move Farther</button>
+        <br>
+        <br>
 
         <br>
         <br>
@@ -57,9 +58,11 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
 
         <b>Delimiter: (autodetected)</b>
 
-        <!--listbox should go here-->
+        <!--table should go here-->
 
+        <div id="input_table" tabulator-tooltips="true">
 
+        </div>
 
         <br>
         <br>
@@ -86,11 +89,6 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
             <option value="Colon">Colon</option>
         </select>
         <br>
-        <br>
-        <br>
-        <button onclick="nextNearestNeighbor();">Move Closer</button> &nbsp; <button onclick="nextFurthestNeighbor();">Move Farther</button>
-        <br>
-        <br>
 
 
         <!-- old coordinate inputs
@@ -107,6 +105,19 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
         &nbsp;
         &nbsp;
         &nbsp;
+
+        <!--include minified papa parse source code-->
+        <script src="papaparse.min.js"></script>
+
+        <!--include heihō source code and styling-->
+        <!--
+        <link rel="stylesheet" href="heiho.css" />
+        <script src="heiho.js"></script>
+        -->
+
+        <!--include tabulator source code and styling-->
+        <link href="tabulator_modern.min.css" rel="stylesheet">
+        <script type="text/javascript" src="tabulator.min.js"></script>
 
         <script>
 
@@ -138,7 +149,7 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
 
                 // papa parse modified config object: see https://www.papaparse.com/docs#config
                 // this tells papa parse how to treat the file.
-                config = {
+                let config = {
                     delimiter: "",	// auto-detect
                     newline: "",	// auto-detect
                     quoteChar: '"',
@@ -155,8 +166,37 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                     complete: function(output) {
 
                         // call Heiho to display our parsed data in a table.
-                        Heiho(output.data, { title: 'Points of interest' });
-                        console.log(output);
+                        // Heiho(output.data, { title: 'Points of interest' });
+
+                        let dataTable = new Tabulator("#input_table", {
+                            data: output.data,
+                            autoColumns:true,
+                            layout:"fitColumns",
+                            headerVisible:false,
+                            tooltips:true,
+                            selectable:"highlight",
+                            rowClick:function(e, row) {
+                                let selectedPoint = row.getData();
+                                let positionData = selectedPoint.slice(1, 4);
+
+                                console.log(typeof positionData[0]);
+
+                                let pointE = parseFloat(positionData[0]);
+                                let pointN = parseFloat(positionData[1]);
+                                let pointZ = parseFloat(positionData[2]);
+
+                                extraParse(pointE, pointN, pointZ)
+
+                                //targetFromNearestNeighbor(pointE, pointN, pointZ);
+
+                                // debug
+                                //console.log(selectedPoint);
+                                //console.log(positionData);
+                            }
+                        });
+
+                        // debug
+                        //console.log(output);
 
                     },
                     error: undefined,
@@ -188,18 +228,15 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                 let cogo_format_value = cogo_format_text.value;
                 console.log(cogo_format_value);
 
-                // store our parsed CSV into a variable we can work with.
+                // store our parsed CSV into a variable we can work with. calls our config object's 'complete' function upon completion.
                 //let dataset = 
-                Papa.parse(cogo_input_text, config); //see https://www.papaparse.com/docs ('Parse Local Files'). filetypes: parse(blob, object)
-
-                //displayTable(dataset, cogo_format_value);
+                Papa.parse(cogo_input_text, config); // see https://www.papaparse.com/docs ('Parse Local Files'). filetypes: parse(blob, object)
 
             }
 
-            //displays CSV file in a table
-            // function displayTable(dataset, type) {
-            //     Heiho(dataset, { title: 'Points of interest'});
-            // }
+            function extraParse(E, N, Z) {
+                targetFromNearestNeighbor(E, N, Z);
+            }
 
             function parseInputsAndContinue() {
                 // Establish Inputs
@@ -318,17 +355,17 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                 let nearestNeighborEasting = String(distances[0].easting);
                 let nearestNeighborElevation = String(distances[0].elevation);
 
-                // print that node ID. this is our nearest neighbor!
-                console.log("Nearest node: " + nearestNeighborNode);
+                // // print that node ID. this is our nearest neighbor!
+                // console.log("Nearest node: " + nearestNeighborNode);
 
-                // print its title, coordinates, etc, too
-                console.log("Custom ID: " + nearestNeighborCustom);
-                console.log("Title: " + nearestNeighborTitle);
-                console.log("Distance from input: " + nearestNeighborDistance);
-                console.log("Distance (2D only): " + nearestNeighborDistance2D);
-                console.log("Northing: " + nearestNeighborNorthing);
-                console.log("Easting: " + nearestNeighborEasting);
-                console.log("Elevation: " + nearestNeighborElevation);
+                // // print its title, coordinates, etc, too
+                // console.log("Custom ID: " + nearestNeighborCustom);
+                // console.log("Title: " + nearestNeighborTitle);
+                // console.log("Distance from input: " + nearestNeighborDistance);
+                // console.log("Distance (2D only): " + nearestNeighborDistance2D);
+                // console.log("Northing: " + nearestNeighborNorthing);
+                // console.log("Easting: " + nearestNeighborEasting);
+                // console.log("Elevation: " + nearestNeighborElevation);
 
                 // Go to our nearest neighbor
                 photo360.pano.openNext("{" + nearestNeighborNode + "}");
@@ -342,10 +379,12 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                 // move potree to our nearest neighbor node if we want
                 //photo360.potree.viewer.scene.view.position.set(distances[0].easting, distances[0].northing, distances[0].elevation);
 
-                // orient potree to match p2vr
-                photo360.potree.viewer.scene.view.lookAt(E, N, Z);
-
+                console.log(distances);
                 getOrSetNodes("set", currentPos, distances);
+
+                // orient potree to match p2vr
+                // NOTE: if potree hasn't been loaded yet, function will error out early if this isn't at the bottom.
+                photo360.potree.viewer.scene.view.lookAt(E, N, Z);
 
             }
 

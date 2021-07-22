@@ -306,6 +306,9 @@ function targetFromNearestNeighbor(E, N, Z) {
     // this function will set these values (getOrSetNodes("set", positionInArray, array) and store them in a global object other functions can talk to.
     getOrSetNodes("set", currentPos, distances);
 
+    // update our distance display to show the distance for this node.
+    updateDistanceDisplay();
+
     // move potree to our nearest neighbor node if we want
     //photo360.potree.viewer.scene.view.position.set(distances[0].easting, distances[0].northing, distances[0].elevation);
 
@@ -357,6 +360,9 @@ function nextNearestNeighbor() {
 
         // orient this node to the input coordinates.
         calculatePanTilt(distances, currentPos);
+
+        // update our distance display to show the distance for this node.
+        updateDistanceDisplay();
     }
 }
 
@@ -380,6 +386,9 @@ function nextFurthestNeighbor() {
 
         // orient this node to the input coordinates.
         calculatePanTilt(distances, currentPos);
+
+        // update our distance display to show the distance for this node.
+        updateDistanceDisplay();
     }
 }
 
@@ -400,5 +409,18 @@ function calculatePanTilt(array, pos) {
     // 360: set pano pan and tilt to look at our input from nearest neighbor.
     photo360.pano.setPanNorth(targetPan);
     photo360.pano.setTilt(calcTilt);
+
+}
+
+// updates the distance display field on the page every time we go to a new node.
+function updateDistanceDisplay() {
+
+    // retrieve the array and our current position from our handoff function, which looks at our global object called dataHandoff.
+    distances = getOrSetNodes("getArr");
+    currentPos = getOrSetNodes("getPos");
+
+    distanceDisplay = document.getElementById("distance_display");
+
+    distanceDisplay.innerHTML = `3D Distance: ${distances[currentPos].distance.toFixed(3)} Survey Feet || Horizontal Distance: ${distances[currentPos].distance2D.toFixed(3)} Survey Feet`;
 
 }

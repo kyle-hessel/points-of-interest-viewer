@@ -4,7 +4,7 @@
 
 <html>
 	<head>
-
+        
 		<title>Photo360 Asset Browser Demo</title>
 
 	</head>
@@ -35,6 +35,9 @@
         <button onclick="nextNearestNeighbor();">Move Closer</button> &nbsp; <button onclick="nextFurthestNeighbor();">Move Farther</button>
         <br>
         <br>
+
+        <!--display current distance from the given node in the tour to the provided input (either the selected row in the spreadsheet, or single coordinate)-->
+        <h3>Current distance: </h3><div id="distance_display">null</div>
 
         <br>
         <br>
@@ -75,7 +78,7 @@
         <!--Input a single point, typically fetched from within the point cloud-->
         <h3>Input a single coordinate</h3>
 
-        <input type="text" id="cogo_input" style="width: 250px" name="cogo_input"><input type="button" value="Go" onclick="parseInputFromTextAndContinue()">
+        <input type="text" id="cogo_input" style="width: 250px" name="cogo_input"><input type="button" value="Go" onclick="parseInputFromTextAndContinue();">
 
         <br>
 

@@ -55,23 +55,17 @@ function parseFileAndContinue() {
                 tooltips:true,
                 selectable:"highlight", // don't let rows stay selected after clicking
 
-                // create an event listener (e) for any given row. if we click on that row, parse only the data points (ENZ,XYZ,etc) and pass them into targetFromNearestNeighbor().
+                // create an event listener (e) for any given row. if we click on that row, parse only the data points (ENZ,XYZ,etc) and pass them into parseInputfromSheetAndContinue().
                 rowClick:function(e, row) {
                     let selectedPoint = row.getData();
-                    let positionData = selectedPoint.slice(1, 4);
 
-                    let pointE = parseFloat(positionData[0]);
-                    let pointN = parseFloat(positionData[1]);
-                    let pointZ = parseFloat(positionData[2]);
-
-                    targetFromNearestNeighbor(pointE, pointN, pointZ);
+                    // pass in our cogo point data into our parser function along with the type of cogo point (PENZD, PNEZD, XYZ, etc)
+                    parseInputfromSheetAndContinue(selectedPoint, cogo_format_value);
 
                     // debug
                     //console.log(selectedPoint);
-                    //console.log(positionData);
                 }
             });
-
         },
         error: undefined, // the rest of this object holds default papa parse settings. see docs to modify.
         download: false,
@@ -110,8 +104,62 @@ function parseFileAndContinue() {
 
 }
 
-// parse a single inputted coordinate.
-function parseInputsAndContinue() {
+// parse an inputted row from a spreadsheet (csv, xlsx, etc. converted to JSON and displayed with tabulator) that holds cogo point data (e.g. PENZD) and then pass into targetFromNearestNeighbor().
+function parseInputfromSheetAndContinue(cogo_row, type) {
+
+    let positionDataCogo = cogo_row.slice(1, 4);
+    let positionDataXYZ = cogo_row;
+
+    // debug
+    //console.log(positionDataCogo);
+
+    // enact different behaviors based on the type of cogo point
+    // js didn't like using the same variable names in these cases, so I had to make different sets for each.
+    switch (type) {
+
+        // if PENZD, sort in the order given after slicing off P and D.
+        case "PENZD":
+            let pointE_PENZD = parseFloat(positionDataCogo[0]);
+            let pointN_PENZD = parseFloat(positionDataCogo[1]);
+            let pointZ_PENZD = parseFloat(positionDataCogo[2]);
+
+            targetFromNearestNeighbor(pointE_PENZD, pointN_PENZD, pointZ_PENZD);
+
+            break;
+
+        // if PNEZD, swap N and E when passing into targetFromNearestNeighbor() after slicing P and D.
+        case "PNEZD":
+            let pointN_PNEZD = parseFloat(positionDataCogo[0]);
+            let pointE_PNEZD = parseFloat(positionDataCogo[1]);
+            let pointZ_PNEZD = parseFloat(positionDataCogo[2]);
+
+            targetFromNearestNeighbor(pointE_PNEZD, pointN_PNEZD, pointZ_PNEZD);
+
+            break;
+
+        // if XYZ don't slice, just pass forward.
+        case "XYZ":
+            let pointX_XYZ = parseFloat(positionDataXYZ[0]);
+            let pointY_XYZ = parseFloat(positionDataXYZ[1]);
+            let pointZ_XYZ = parseFloat(positionDataXYZ[2]);
+
+            targetFromNearestNeighbor(pointX_XYZ, pointY_XYZ, pointZ_XYZ);
+
+            break;
+
+        // default to PENZD if somehow nothing is provided.
+        default:
+
+            let pointE = parseFloat(positionDataCogo[0]);
+            let pointN = parseFloat(positionDataCogo[1]);
+            let pointZ = parseFloat(positionDataCogo[2]);
+
+            targetFromNearestNeighbor(pointE, pointN, pointZ);
+    }
+}
+
+// parse a single inputted coordinate from a textbox.
+function parseInputFromTextAndContinue() {
     
     // Establish Inputs
     let cogo_input_text = document.getElementById("cogo_input");

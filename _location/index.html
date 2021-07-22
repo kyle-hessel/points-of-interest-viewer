@@ -1,53 +1,58 @@
 <!DOCTYPE html>
 
-<!--HTML originally written by Cory Hessel,
-modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
+<!--Asset browser web demo written by Kyle Hessel with bits and pieces derived from Cory Hessel & Jeff McKinney's code.-->
 
 <html>
 	<head>
 
-		<title>Photo360 Nearest Neighbor & Target XYZ demo</title>
+		<title>Photo360 Asset Browser Demo</title>
 
 	</head>
 
 	<body align="center">
 
-        <p align="center"><iframe style="border: 10px #19c221 solid;" src="https://photo360.pennoni.com/projects/br17/index.html" name="photo360" id="photo360" width="1700px" height="1000px" frameborder="1" marginwidth="0px" marginheight="0px" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
+        <!--load SR4 by default-->
+        <p align="center"><iframe style="border: 10px #19c221 solid;" src="https://photo360.pennoni.com/projects/sr4/index.html" name="photo360" id="photo360" width="1700px" height="1000px" frameborder="1" marginwidth="0px" marginheight="0px" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
         <p align="center"   style="font-family:verdana">   
 
         <b><u>Load Photo360 Project</u></b>
         <br>
         <br>
 
-        <b>Photo360 /project/: </b><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/br17/index.html" style="width: 300px"></input><button type="button" onClick="loadPhoto360();">Load</button>
+        <!--input a new Photo360 to load it: populate this box with SR4 by default-->
+        <b>Photo360 /project/: </b><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/sr4/index.html" style="width: 300px"></input><button type="button" onClick="loadPhoto360();">Load</button>
 
         <br>
         <br>
 
+        <!--turn the crosshair in the iframe on and off with event listeners.-->
         <button onclick="enableCrosshair();">Enable Crosshair</button> &nbsp; <button onclick="disableCrosshair();">Disable Crosshair</button>
 
         <br>
         <br>
 
+        <!--navigate to the next nearest or next farthest neighbor with event listeners (only works once data is loaded, located)-->
         <button onclick="nextNearestNeighbor();">Move Closer</button> &nbsp; <button onclick="nextFurthestNeighbor();">Move Farther</button>
         <br>
         <br>
 
         <br>
         <br>
-        <u><b>Find nearest neighbor to given XYZ coordinates and target XYZ from that node:</b></u>
+        <u><b>View assets within a dataset from any available perspective in a given Photo360.</b></u>
         <br>
         <br>
 
         <!-- Input a dataset (CSV) -->
         <h3>Input a dataset of coordinates</h3>
 
+        <!--use a <label> tag with the file input tag, good practice apparently-->
         <label for="csv_importer">Import .CSV</label>
-        <br>
+        <br> <!--display our file upon import by calling a function with an event listener.-->
         <input type="file" name="csv_importer" id="csv_importer" accept=".csv"><input type="button" value="Import" onclick="parseFileAndContinue();">
 
         <br>
 
+        <!--choose the format for our dataset so that we can decide how to sort it.-->
         <b>Format:</b>
         <select name="cogo_format_set" id="cogo_format_set">
             <option value="PENZD">PENZD</option>
@@ -55,11 +60,10 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
             <option value="XYZ">XYZ</option>
         </select>
 
-
+        <!--unlike importing a single point, the delimiter is auto-detected by papa parse, so we make note of this-->
         <b>Delimiter: (autodetected)</b>
 
-        <!--table should go here-->
-
+        <!--create an empty div to hold a table. tabulator will later be instructed to create it inside an element with the given ID-->
         <div id="input_table" tabulator-tooltips="true">
 
         </div>
@@ -67,7 +71,8 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
         <br>
         <br>
 
-        <!--Input a single point-->
+
+        <!--Input a single point, typically fetched from within the point cloud-->
         <h3>Input a single coordinate</h3>
 
         <input type="text" id="cogo_input" style="width: 250px" name="cogo_input"><input type="button" value="Go" onclick="parseInputsAndContinue()">
@@ -109,46 +114,42 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
         <!--include minified papa parse source code-->
         <script src="papaparse.min.js"></script>
 
-        <!--include heihō source code and styling-->
-        <!--
-        <link rel="stylesheet" href="heiho.css" />
-        <script src="heiho.js"></script>
-        -->
-
         <!--include tabulator source code and styling-->
         <link href="tabulator_modern.min.css" rel="stylesheet">
         <script type="text/javascript" src="tabulator.min.js"></script>
 
         <script>
 
-            let dummyStruct;
+            // create an empty variable that we will use later as an object to take data from one function, store it inside of here in a global context, and later use it in another function.
+            let dataHandoff;
 
+            // load a given photo360
             function loadPhoto360(){
-            document.getElementById("photo360").src = document.getElementById("inputurl").value;
+                document.getElementById("photo360").src = document.getElementById("inputurl").value;
             }
 
-
             /* not currently being used
-
             function updateCoordinates(){
             document.getElementById("currentcoordinates").value = (String.prototype.concat( (String((potree.viewer.scene.getActiveCamera().position.x).toFixed(4))),",",(String((potree.viewer.scene.getActiveCamera().position.y).toFixed(4))),",",(String((potree.viewer.scene.getActiveCamera().position.z).toFixed(4))) ));
             }
             */
 
+            // turn on the crosshair in the iframe
             function enableCrosshair() {
                 photo360.pano.setVariableValue("crosshair_display",true);
                 photo360.pano.setVariableValue("compass_visible",true);
             }
 
+            // turn off the crosshair in the iframe
             function disableCrosshair() {
                 photo360.pano.setVariableValue("crosshair_display",false);
             }
 
-            // parses CSV file
+            // parses CSV file of coordinates.
             function parseFileAndContinue() {
 
                 // papa parse modified config object: see https://www.papaparse.com/docs#config
-                // this tells papa parse how to treat the file.
+                // this tells papa parse how to treat the file, but the code inside complete: isn't executed until Papa.parse() is called somewhere.
                 let config = {
                     delimiter: "",	// auto-detect
                     newline: "",	// auto-detect
@@ -162,32 +163,29 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                     worker: false,
                     comments: false,
                     step: undefined,
-                    //print out data to the console and return it. papa parse doesn't do this by default. 
+                    // once the data is parsed (Papa.parse()), tell papa parse what to do with it. we have to do this inside of this 'complete' object function. 
                     complete: function(output) {
 
-                        // call Heiho to display our parsed data in a table.
-                        // Heiho(output.data, { title: 'Points of interest' });
-
-                        let dataTable = new Tabulator("#input_table", {
-                            data: output.data,
+                        // use tabulator to take our papa parse data and display it in a table that we configure in a specific way and specific location.
+                        // see tabulator docs: http://tabulator.info/docs/4.9
+                        let dataTable = new Tabulator("#input_table", { // tell tabulator to put the table in an element with this ID, in our case a div from earlier.
+                            data: output.data, // set the spreadsheet data to be our parsed data within the object papa parse created.
                             autoColumns:true,
-                            layout:"fitColumns",
+                            layout:"fitColumns", // make spreadsheet fit page size evenly
                             headerVisible:false,
                             tooltips:true,
-                            selectable:"highlight",
+                            selectable:"highlight", // don't let rows stay selected after clicking
+
+                            // create an event listener (e) for any given row. if we click on that row, parse only the data points (ENZ,XYZ,etc) and pass them into targetFromNearestNeighbor().
                             rowClick:function(e, row) {
                                 let selectedPoint = row.getData();
                                 let positionData = selectedPoint.slice(1, 4);
-
-                                console.log(typeof positionData[0]);
 
                                 let pointE = parseFloat(positionData[0]);
                                 let pointN = parseFloat(positionData[1]);
                                 let pointZ = parseFloat(positionData[2]);
 
-                                extraParse(pointE, pointN, pointZ)
-
-                                //targetFromNearestNeighbor(pointE, pointN, pointZ);
+                                targetFromNearestNeighbor(pointE, pointN, pointZ);
 
                                 // debug
                                 //console.log(selectedPoint);
@@ -195,11 +193,8 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                             }
                         });
 
-                        // debug
-                        //console.log(output);
-
                     },
-                    error: undefined,
+                    error: undefined, // the rest of this object holds default papa parse settings. see docs to modify.
                     download: false,
                     downloadRequestHeaders: undefined,
                     downloadRequestBody: undefined,
@@ -210,10 +205,10 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                     beforeFirstChunk: undefined,
                     withCredentials: undefined,
                     transform: undefined,
-                    delimitersToGuess: [',', '\t', '|', ';', Papa.RECORD_SEP, Papa.UNIT_SEP]
+                    delimitersToGuess: [',', '\t', '|', ';', Papa.RECORD_SEP, Papa.UNIT_SEP] // this line is worth noting: we can add custom delimiters.
                 }
 
-                // establish inputs
+                // establish inputs: get filename from our input field.
                 let cogo_input_field = document.getElementById("csv_importer");
                 let cogo_input_text = cogo_input_field.files[0]; // don't do files[x].name, papa parse expects an object. (or.. blob in this case)
 
@@ -224,23 +219,22 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                 //console.log(cogo_input_text.name);
                 
                 // store our formatting type (e.g. PENZD)
+                // *** AS OF NOW PENZD is the default, make this functionality do something later: preferably in the complete: key-value in the papa parse 'config' obj above.
                 let cogo_format_text = document.getElementById("cogo_format_set");
                 let cogo_format_value = cogo_format_text.value;
                 console.log(cogo_format_value);
 
-                // store our parsed CSV into a variable we can work with. calls our config object's 'complete' function upon completion.
-                //let dataset = 
-                Papa.parse(cogo_input_text, config); // see https://www.papaparse.com/docs ('Parse Local Files'). filetypes: parse(blob, object)
+                // parse our CSV file into something we can work with (JSON). calls our config object's 'complete' function (above) upon completion.
+                Papa.parse(cogo_input_text, config); // see https://www.papaparse.com/docs ('Parse Local Files'). 
+                                                     //parse( blob - an object we receive from our file input html tag, which we fetch the name of above.
+                                                     // , 'default' object - papa parse's obj that determines how to handle this data, which we modified above. )
 
             }
 
-            function extraParse(E, N, Z) {
-                targetFromNearestNeighbor(E, N, Z);
-            }
-
+            // parse a single inputted coordinate.
             function parseInputsAndContinue() {
+                
                 // Establish Inputs
-    
                 let cogo_input_text = document.getElementById("cogo_input");
                 let cogo_input_value = cogo_input_text.value;
 
@@ -260,7 +254,6 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                 if (delimiter_value == "Semicolon") delimiter_character = ";"	
 
                 // Parse input based on Cogo Format + Delimiter
-
                 if(cogo_format_value == "XYZ") {
                     inputX = parseFloat(cogo_input_value.split(delimiter_character)[0]); 
                     inputY = parseFloat(cogo_input_value.split(delimiter_character)[1]);
@@ -284,15 +277,18 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
 
             }
             
+            // creates a dataset of nearest neighbor nodes from the given coordinate sorted from closest to farthest; accounts for the entire tour.
+            // afterwards, moves us to the nearest neighbor (distances[0]) and calls another function to aim us directly at our inputted point.
+            // hence the name, targetFromNearestNeighbor.
             function targetFromNearestNeighbor(E, N, Z) {
 
-                // needs to stay declared inside
                 let distances = new Array(); // create empty distances array for later.
                 let currentPos = 0; // declare arbitrary position variable for the distances array.
 
                 // find the nearest neighbor and set up our array
                 
-                // use northing, easting, and elevation distances from the input (coordinates) to the destination (node) to determine which node is the closest. store info in an object.
+                // determine northing, easting, and elevation distances from the input (coordinates) to the destination (node) to determine which node is the closest. store info in an object.
+                // do this for every node.
                 for (i = 0; i < photo360.pano.getNodeIds().length; i = i + 1) {
 
                     let thisNode = photo360.pano.getNodeIds()[i];
@@ -302,19 +298,19 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                     let nodeTitle = photo360.pano.getNodeUserdata(thisNode).title;
                     let customID = photo360.pano.getNodeUserdata(thisNode).customnodeid;
 
-                    // calculate northing distance from input
+                    // calculate northing distance from input Y
                     let diffN = N - destN;
 
-                    // calculate easting distance input
+                    // calculate easting distance input X
                     let diffE = E - destE;
 
-                    // calculate elevation distance input
+                    // calculate elevation distance input Z
                     let diffZ = Z - destZ;
 
-                    // use both of these distances to get the absolute distance between the two points with pythagorean thorem.
+                    // use both of these distances to get the distance between the two points with pythagorean thorem.
                     let distance2D = Math.sqrt((diffN * diffN) + (diffE * diffE));
 
-                    // use our elevation difference and our hypotneuse from the last line to get our 3D (true) distance, simply called distance.
+                    // use our elevation (z) distance and our hypotenuse (c=sqrt(a^2+b^2)) from the last line to get our 3D (true) distance, simply called distance.
                     let distance = Math.sqrt((diffZ * diffZ) + (distance2D * distance2D));
 
                     // store this information in a new object that has our nearest neighbor and other related information.
@@ -323,19 +319,19 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                         'custom': customID,
                         'title': nodeTitle,
                         'distance2D': distance2D,
-                        'distance': distance,
+                        'distance': distance, // our distance to the given input from this node.
                         'northing': destN,
                         'easting': destE,
                         'elevation': destZ,
-                        'deltaX': diffE,
+                        'deltaX': diffE, // individual distance differences.
                         'deltaY': diffN,
                         'deltaZ': diffZ,
-                        'relativeX': E,
+                        'relativeX': E, // hold onto our original inputs that we used to get this information.
                         'relativeY':  N,
                         'relativeZ': Z
                     }
 
-                    // push this object to our array we created.
+                    // push this object to our array we created earlier.
                     distances.push(output);
 
                     // this makes use of a callback function to specifically sort through objects in the array by their distance value, lowest to highest.
@@ -345,7 +341,7 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
 
                 }
 
-                // now that we sorted, the closest distance is in the first slot of the array. fetch this node's information.
+                // now that we sorted, the closest distance is in the first slot of the array (index 0). fetch this node's information.
                 let nearestNeighborNode = distances[0].node;
                 let nearestNeighborCustom = distances[0].custom;
                 let nearestNeighborTitle = distances[0].title;
@@ -367,40 +363,48 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                 // console.log("Easting: " + nearestNeighborEasting);
                 // console.log("Elevation: " + nearestNeighborElevation);
 
-                // Go to our nearest neighbor
+                // Go to our nearest neighbor.
                 photo360.pano.openNext("{" + nearestNeighborNode + "}");
 
-                // set our current distances array index to 0 since we're at the nearest neighbor.
+                // set our current distances array index to 0 since we're at the nearest neighbor (used for navigating to other neighbors later).
                 currentPos = 0;
 
-                // calculate pan and tilt for nearest neighbor aiming at input
+                // calculate pan and tilt for nearest neighbor so that we aim at our input from this node.
                 calculatePanTilt(distances, currentPos);
-                
+
+                // debug
+                //console.log(distances);
+
+                // pass our currentPosition (the nearest neighbor) and our sorted distances array containing every node into a getter/setter hybrid function.
+                // this function will set these values (getOrSetNodes("set", positionInArray, array) and store them in a global object other functions can talk to.
+                getOrSetNodes("set", currentPos, distances);
+
                 // move potree to our nearest neighbor node if we want
                 //photo360.potree.viewer.scene.view.position.set(distances[0].easting, distances[0].northing, distances[0].elevation);
 
-                console.log(distances);
-                getOrSetNodes("set", currentPos, distances);
-
-                // orient potree to match p2vr
+                // orient potree to look at what p2vr is looking at, regardless of if we're at the same position or not.
                 // NOTE: if potree hasn't been loaded yet, function will error out early if this isn't at the bottom.
                 photo360.potree.viewer.scene.view.lookAt(E, N, Z);
 
             }
 
+            // handoff function sets the input into a global object, or gets this information and provides it.
+            // when setting, provide all three inputs. when getting, only provide the first: ignore the last two.
             function getOrSetNodes(type, pos = 0, arr = []) {
 
                 if (type === "set") {
 
-                    dummyStruct = {
+                    // populate our object, created at the very top of our script.
+                    dataHandoff = {
                         "setupPosition": pos,
                         "arrayOfNodes": arr
                     }
 
+                // return our array or array position.
                 } else if (type === "getArr") {
-                    return dummyStruct.arrayOfNodes;
+                    return dataHandoff.arrayOfNodes;
                 } else if (type === "getPos") {
-                    return dummyStruct.setupPosition;
+                    return dataHandoff.setupPosition;
                 }
 
             }
@@ -408,6 +412,7 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
             // move to next nearest neighbor using our distances array
             function nextNearestNeighbor() {
 
+                // retrieve the array and our current position from our handoff function, which looks at our global object called dataHandoff.
                 distances = getOrSetNodes("getArr");
                 currentPos = getOrSetNodes("getPos");
 
@@ -451,7 +456,7 @@ modified by Kyle Hessel with new/changed JS scripts inserted as well.-->
                 }
             }
 
-            // aim the given node at the provided input coordinates.
+            // aim the given node at the provided input coordinates. meant to be used with arrays holding many tour nodes (objects).
             function calculatePanTilt(array, pos) {
 
                 let deltaX = array[pos].deltaX;

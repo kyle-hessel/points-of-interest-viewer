@@ -421,6 +421,6 @@ function updateDistanceDisplay() {
 
     distanceDisplay = document.getElementById("distance_display");
 
-    distanceDisplay.innerHTML = `3D Distance: ${distances[currentPos].distance.toFixed(3)} Survey Feet || Horizontal Distance: ${distances[currentPos].distance2D.toFixed(3)} Survey Feet`;
+    distanceDisplay.innerHTML = "3D Distance " + String(distances[currentPos].distance.toFixed(3)) + " Survey Feet" + "<br>" + "Horizontal Distance: " + String(distances[currentPos].distance2D.toFixed(3)) + " Survey Feet";
 
 }

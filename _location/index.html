@@ -4,99 +4,101 @@
 
 <html>
 	<head>
-        
-		<title>Photo360 Asset Browser Demo</title>
-
+        <!--include our stylesheet-->
+        <link rel="stylesheet" href="main.css">
+        <!--include font on apache 2.0 license-->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;0,900;1,400&display=swap" rel="stylesheet">
+		<title>Photo360 Asset Browser Development Environment</title>
 	</head>
 
-	<body align="center">
+	<body>
 
         <!--load SR4 by default-->
-        <p align="center"><iframe style="border: 10px #19c221 solid;" src="https://photo360.pennoni.com/projects/sr4/index.html" name="photo360" id="photo360" width="1700px" height="1000px" frameborder="1" marginwidth="0px" marginheight="0px" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
-        <p align="center"   style="font-family:verdana">   
+        <p><iframe src="https://photo360.pennoni.com/projects/sr4/index.html" name="photo360" id="photo360" frameBorder="no" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
 
-        <b><u>Load Photo360 Project</u></b>
-        <br>
-        <br>
+        <div name="right_panel" id="right_panel">
+            <p id="right_panel_title">Photo360 Asset Browser</p>
 
-        <!--input a new Photo360 to load it: populate this box with SR4 by default-->
-        <b>Photo360 /project/: </b><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/sr4/index.html" style="width: 300px"></input><button type="button" onClick="loadPhoto360();">Load</button>
+            <!--input a new Photo360 to load it: populate this box with SR4 by default-->
+            <p class="right_panel_subheading">Photo360 URL:</p><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/sr4/index.html"><button type="button" class="button" onClick="loadPhoto360();">Load</button>
 
-        <br>
-        <br>
 
-        <!--turn the crosshair in the iframe on and off with event listeners.-->
-        <button onclick="enableCrosshair();">Enable Crosshair</button> &nbsp; <button onclick="disableCrosshair();">Disable Crosshair</button>
+            <!--turn the crosshair in the iframe on and off with event listeners.-->
+            <div id="crosshair">
+                <button onclick="enableCrosshair();" class="button">Enable Crosshair</button>
+                <button onclick="disableCrosshair();" class="button">Disable Crosshair</button>
+            </div>
 
-        <br>
-        <br>
 
-        <!--navigate to the next nearest or next farthest neighbor with event listeners (only works once data is loaded, located)-->
-        <button onclick="nextNearestNeighbor();">Move Closer</button> &nbsp; <button onclick="nextFurthestNeighbor();">Move Farther</button>
-        <br>
-        <br>
+            <!--navigate to the next nearest or next farthest neighbor with event listeners (only works once data is loaded, located)-->
+            <button onclick="nextNearestNeighbor();" class="button">Move Closer</button> &nbsp; <button onclick="nextFurthestNeighbor();" class="button">Move Farther</button>
 
-        <!--display current distance from the given node in the tour to the provided input (either the selected row in the spreadsheet, or single coordinate)-->
-        <h3>Current distance: </h3><div id="distance_display">null</div>
+            <!--display current distance from the given node in the tour to the provided input (either the selected row in the spreadsheet, or single coordinate)-->
+            <div id="distance_block">
+                <p class="right_panel_body">Current distance: </p><div id="distance_display">null</div>
+            </div>
 
-        <br>
-        <br>
-        <u><b>View assets within a dataset from any available perspective in a given Photo360.</b></u>
-        <br>
-        <br>
+            <!-- Input a dataset (CSV) -->
+            <p class="right_panel_subheading2">Input a set of coordinates (.CSV):</p>
 
-        <!-- Input a dataset (CSV) -->
-        <h3>Input a dataset of coordinates</h3>
+            <!--use a <label> tag with the file input tag, good practice apparently-->
+            <label for="csv_importer" class="file_input">Import Cogo Points</label>
+            <!--display our file upon import by calling a function with an event listener.-->
+            <input type="file" name="csv_importer" id="csv_importer" accept=".csv" ><input type="button" value="Load Table" onclick="parseFileAndContinue();" class="button">
 
-        <!--use a <label> tag with the file input tag, good practice apparently-->
-        <label for="csv_importer">Import .CSV</label>
-        <br> <!--display our file upon import by calling a function with an event listener.-->
-        <input type="file" name="csv_importer" id="csv_importer" accept=".csv"><input type="button" value="Import" onclick="parseFileAndContinue();">
 
-        <br>
+            <!--choose the format for our dataset so that we can decide how to sort it.-->
+            <div class="cogo_settings">
+                <p class="right_panel_body">Format:</p>
+                <select name="cogo_format_set" id="cogo_format_set">
+                    <option value="PENZD">PENZD</option>
+                    <option value="PNEZD">PNEZD</option>
+                    <option value="XYZ">XYZ</option>
+                </select>
 
-        <!--choose the format for our dataset so that we can decide how to sort it.-->
-        <b>Format:</b>
-        <select name="cogo_format_set" id="cogo_format_set">
-            <option value="PENZD">PENZD</option>
-            <option value="PNEZD">PNEZD</option>
-            <option value="XYZ">XYZ</option>
-        </select>
+                <!--unlike importing a single point, the delimiter is auto-detected by papa parse, so we make note of this-->
+                <p class="right_panel_body">Delimiter: (autodetected)</p>
+            </div>
 
-        <!--unlike importing a single point, the delimiter is auto-detected by papa parse, so we make note of this-->
-        <b>Delimiter: (autodetected)</b>
+            <!--create an empty div to hold a table. tabulator will later be instructed to create it inside an element with the given ID-->
+            <div id="input_table" tabulator-tooltips="true"></div>
 
-        <!--create an empty div to hold a table. tabulator will later be instructed to create it inside an element with the given ID-->
-        <div id="input_table" tabulator-tooltips="true">
+            <!--Input a single point, typically fetched from within the point cloud-->
+            <p class="right_panel_subheading2">Input a single coordinate:</p>
+
+            <input type="text" id="cogo_input" style="width: 250px" name="cogo_input"><input type="button" value="Go" onclick="parseInputFromTextAndContinue();" class="button">
+
+            <div class="cogo_settings">
+                <p class="right_panel_body">Format:</p>
+                <select name="cogo_format" id="cogo_format">
+                    <option value="XYZ">XYZ</option>
+                    <option value="PNEZD">PNEZD</option>
+                    <option value="PENZD">PENZD</option>
+                </select>
+
+
+                <p class="right_panel_body">Delimiter:</p>
+                <select name="delimiter" id="delimiter">
+                    <option value="Comma">Comma</option>
+                    <option value="Space">Space</option>
+                    <option value="Colon">Colon</option>
+                </select>
+            </div>
+
+            <br>
+            <br>
+            <br>
+
+            <img src="img/Pennoni_Logo_White-01-1.svg" id="logo">
+
+            <br>
+            <br>
+            <br>
 
         </div>
-
-        <br>
-        <br>
-
-
-        <!--Input a single point, typically fetched from within the point cloud-->
-        <h3>Input a single coordinate</h3>
-
-        <input type="text" id="cogo_input" style="width: 250px" name="cogo_input"><input type="button" value="Go" onclick="parseInputFromTextAndContinue();">
-
-        <br>
-
-        <b>Format:</b>
-        <select name="cogo_format" id="cogo_format">
-            <option value="XYZ">XYZ</option>
-            <option value="PNEZD">PNEZD</option>
-            <option value="PENZD">PENZD</option>
-        </select>
-
-
-        <b>Delimiter:</b>
-        <select name="delimiter" id="delimiter">
-            <option value="Comma">Comma</option>
-            <option value="Space">Space</option>
-            <option value="Colon">Colon</option>
-        </select>
-        <br>
 
 
         <!-- old coordinate inputs

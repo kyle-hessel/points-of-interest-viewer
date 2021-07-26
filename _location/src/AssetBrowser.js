@@ -328,52 +328,87 @@ function addInputToSheet() {
     // Break out of the function if we try to add a coordinate incorrectly.
     if (cogo_format_set_value !== cogo_format_value) {
 
-        alert("Error: Input format does not match.");
-        return;
+        // if we are inputting an XYZ coordinate and the spreadsheet is set to PENZD or PNEZD, let the user know we are automatically converting it for them.
+        if ((cogo_format_set_value === "PENZD" || cogo_format_set_value === "PNEZD") && cogo_format_value === "XYZ") {
+            alert("Converting XYZ coordinate to " + cogo_format_set_value);
 
-    } else {
+        // if not, break out of function to avoid errors.
+        } else {
+            alert("Error: Input format does not match.");
+            return;
+        }
+    }
 
-        // Establish Character Definitions for Delimiter Labels
-        let inputP, inputX, inputY, inputZ, inputD;
-        let delimiter_character;
+    // Establish Character Definitions for Delimiter Labels
+    let inputP, inputX, inputY, inputZ, inputD;
+    let delimiter_character;
 
-        if (delimiter_value == "Comma") delimiter_character = ","
-        if (delimiter_value == "Space") delimiter_character = " "
-        if (delimiter_value == "Colon") delimiter_character = ":"
-        if (delimiter_value == "Semicolon") delimiter_character = ";"	
+    if (delimiter_value == "Comma") delimiter_character = ","
+    if (delimiter_value == "Space") delimiter_character = " "
+    if (delimiter_value == "Colon") delimiter_character = ":"
+    if (delimiter_value == "Semicolon") delimiter_character = ";"	
 
-        // Parse input based on Cogo Format + Delimiter, then add to our dataset.
-        if(cogo_format_value == "XYZ") {
+    // Parse input based on Cogo Format + Delimiter, then add to our dataset.
+    if(cogo_format_value == "XYZ") {
+
+        // if spreadsheet type matches point type, match them up.
+        if (cogo_format_set_value === "XYZ") {
+
             inputX = String(cogo_input_value.split(delimiter_character)[0]); 
             inputY = String(cogo_input_value.split(delimiter_character)[1]);
             inputZ = String(cogo_input_value.split(delimiter_character)[2]);
 
-            dataset.addData({X:inputX, Y:inputY, Z:inputZ}, false);
-        }
+            dataset.addData({ X:inputX, Y:inputY, Z:inputZ }, false);
 
-        if(cogo_format_value == "PENZD") {
-            inputP = String(cogo_input_value.split(delimiter_character)[0]);
-            inputX = String(cogo_input_value.split(delimiter_character)[1]); 
-            inputY = String(cogo_input_value.split(delimiter_character)[2]);
-            inputZ = String(cogo_input_value.split(delimiter_character)[3]);
-            inputD = String(cogo_input_value.split(delimiter_character)[4]);
+        // if spreadsheet type is PENZD convert XYZ to PENZD.
+        } else if (cogo_format_set_value === "PENZD") {
 
-            // make a tabulator tableName.addData() call to pass our parsed data into our spreadsheet.
-            dataset.addData({P:inputP,E:inputX,N:inputY,Z:inputZ,D:inputD}, false);
-            console.log(dataset.getData());
-        }  
-
-        if(cogo_format_value == "PNEZD") {
-            inputP = String(cogo_input_value.split(delimiter_character)[0]);
-            inputX = String(cogo_input_value.split(delimiter_character)[2]); 
+            inputP = "";
+            inputX = String(cogo_input_value.split(delimiter_character)[0]); 
             inputY = String(cogo_input_value.split(delimiter_character)[1]);
-            inputZ = String(cogo_input_value.split(delimiter_character)[3]);
-            inputD = String(cogo_input_value.split(delimiter_character)[4]);
+            inputZ = String(cogo_input_value.split(delimiter_character)[2]);
+            inputD = "";
 
-            dataset.addData({P:inputP,N:inputY,E:inputX,Z:inputZ,D:inputD}, false);
+            dataset.addData({ P:inputP, E:inputX, N:inputY, Z:inputZ, D:inputD }, false);
+
+        // if spreadsheet type is PNEZD convert XYZ to PNEZD.
+        } else if (cogo_format_set_value === "PNEZD") {
+
+            inputP = "";
+            inputX = String(cogo_input_value.split(delimiter_character)[0]); 
+            inputY = String(cogo_input_value.split(delimiter_character)[1]);
+            inputZ = String(cogo_input_value.split(delimiter_character)[2]);
+            inputD = "";
+
+            dataset.addData({ P:inputP, N:inputY, E:inputX, Z:inputZ, D:inputD }, false);
         }
 
     }
+
+    // add PENZD point to spreadsheet.
+    if(cogo_format_value == "PENZD") {
+        inputP = String(cogo_input_value.split(delimiter_character)[0]);
+        inputX = String(cogo_input_value.split(delimiter_character)[1]); 
+        inputY = String(cogo_input_value.split(delimiter_character)[2]);
+        inputZ = String(cogo_input_value.split(delimiter_character)[3]);
+        inputD = String(cogo_input_value.split(delimiter_character)[4]);
+
+        // make a tabulator tableName.addData() call to pass our parsed data into our spreadsheet.
+        dataset.addData({ P:inputP, E:inputX, N:inputY, Z:inputZ, D:inputD }, false);
+        console.log(dataset.getData());
+    }  
+
+    // add PNEZD point to spreadsheet.
+    if(cogo_format_value == "PNEZD") {
+        inputP = String(cogo_input_value.split(delimiter_character)[0]);
+        inputX = String(cogo_input_value.split(delimiter_character)[2]); 
+        inputY = String(cogo_input_value.split(delimiter_character)[1]);
+        inputZ = String(cogo_input_value.split(delimiter_character)[3]);
+        inputD = String(cogo_input_value.split(delimiter_character)[4]);
+
+        dataset.addData({ P:inputP, N:inputY, E:inputX, Z:inputZ, D:inputD }, false);
+    }
+
     // debug
     //console.log(getOrSetSheet("get"));
 }

@@ -69,7 +69,11 @@
             <!--Input a single point, typically fetched from within the point cloud-->
             <p class="right_panel_subheading2">Input a single coordinate:</p>
 
-            <input type="text" id="cogo_input" style="width: 250px" name="cogo_input"><input type="button" value="Go" onclick="parseInputFromTextAndContinue();" class="button">
+            <input type="text" id="cogo_input" style="width: 200px" name="cogo_input">
+            <input type="button" value="Go" onclick="parseInputFromTextAndContinue();" class="button">
+            <!--Add the single inputted point to an existing spreadsheet-->
+            <input type="button" value="Add" onclick="addInputToSheet();" class="button">
+
 
             <div class="cogo_settings">
                 <p class="right_panel_body">Format:</p>

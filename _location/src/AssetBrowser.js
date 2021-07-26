@@ -1,6 +1,7 @@
 
 // create an empty variable that we will use later as an object to take data from one function, store it inside of here in a global context, and later use it in another function.
 let dataHandoff;
+let dataSheet; // create another
 
 // load a given photo360
 function loadPhoto360(){
@@ -54,10 +55,13 @@ function parseFileAndContinue() {
                 headerVisible:false,
                 tooltips:true,
                 selectable:"highlight", // don't let rows stay selected after clicking
+                history:true,
 
                 // create an event listener (e) for any given row. if we click on that row, parse only the data points (ENZ,XYZ,etc) and pass them into parseInputfromSheetAndContinue().
                 rowClick:function(e, row) {
                     let selectedPoint = row.getData();
+
+                    console.log(typeof selectedPoint);
 
                     // pass in our cogo point data into our parser function along with the type of cogo point (PENZD, PNEZD, XYZ, etc)
                     parseInputfromSheetAndContinue(selectedPoint, cogo_format_value);
@@ -66,6 +70,17 @@ function parseFileAndContinue() {
                     //console.log(selectedPoint);
                 }
             });
+
+            // pass our data table into a function that will then store it in a global context so we can work with it dynamically after creation.
+            getOrSetSheet("set", dataTable);
+
+            // debug
+            // console.log(dataTable);
+            // console.log (typeof dataTable);
+
+            // console.log(getOrSetSheet("get"));
+            // console.log(typeof getOrSetSheet("get"));
+
         },
         error: undefined, // the rest of this object holds default papa parse settings. see docs to modify.
         download: false,
@@ -107,7 +122,7 @@ function parseFileAndContinue() {
 // parse an inputted row from a spreadsheet (csv, xlsx, etc. converted to JSON and displayed with tabulator) that holds cogo point data (e.g. PENZD) and then pass into targetFromNearestNeighbor().
 function parseInputfromSheetAndContinue(cogo_row, type) {
 
-    let positionDataCogo = cogo_row.slice(1, 4);
+    //let positionDataCogo = cogo_row.slice(1, 4); //breaks rows of objects since they can't be sliced, don't actually need to slice this.
     let positionDataXYZ = cogo_row;
 
     // debug
@@ -119,9 +134,9 @@ function parseInputfromSheetAndContinue(cogo_row, type) {
 
         // if PENZD, sort in the order given after slicing off P and D.
         case "PENZD":
-            let pointE_PENZD = parseFloat(positionDataCogo[0]);
-            let pointN_PENZD = parseFloat(positionDataCogo[1]);
-            let pointZ_PENZD = parseFloat(positionDataCogo[2]);
+            let pointE_PENZD = parseFloat(positionDataXYZ[1]); //start at 1 to factor in the P.
+            let pointN_PENZD = parseFloat(positionDataXYZ[2]);
+            let pointZ_PENZD = parseFloat(positionDataXYZ[3]);
 
             targetFromNearestNeighbor(pointE_PENZD, pointN_PENZD, pointZ_PENZD);
 
@@ -129,9 +144,9 @@ function parseInputfromSheetAndContinue(cogo_row, type) {
 
         // if PNEZD, swap N and E when passing into targetFromNearestNeighbor() after slicing P and D.
         case "PNEZD":
-            let pointN_PNEZD = parseFloat(positionDataCogo[0]);
-            let pointE_PNEZD = parseFloat(positionDataCogo[1]);
-            let pointZ_PNEZD = parseFloat(positionDataCogo[2]);
+            let pointN_PNEZD = parseFloat(positionDataXYZ[1]); //start at 1 to factor in the P.
+            let pointE_PNEZD = parseFloat(positionDataXYZ[2]);
+            let pointZ_PNEZD = parseFloat(positionDataXYZ[3]);
 
             targetFromNearestNeighbor(pointE_PNEZD, pointN_PNEZD, pointZ_PNEZD);
 
@@ -150,9 +165,9 @@ function parseInputfromSheetAndContinue(cogo_row, type) {
         // default to PENZD if somehow nothing is provided.
         default:
 
-            let pointE = parseFloat(positionDataCogo[0]);
-            let pointN = parseFloat(positionDataCogo[1]);
-            let pointZ = parseFloat(positionDataCogo[2]);
+            let pointE = parseFloat(positionDataXYZ[1]);
+            let pointN = parseFloat(positionDataXYZ[2]);
+            let pointZ = parseFloat(positionDataXYZ[3]);
 
             targetFromNearestNeighbor(pointE, pointN, pointZ);
     }
@@ -194,7 +209,7 @@ function parseInputFromTextAndContinue() {
     }  
 
     if(cogo_format_value == "PNEZD") {
-        inputX = parseFloat(cogo_input_value.split(delimiter_character)[1]); 
+        inputX = parseFloat(cogo_input_value.split(delimiter_character)[2]); 
         inputY = parseFloat(cogo_input_value.split(delimiter_character)[1]);
         inputZ = parseFloat(cogo_input_value.split(delimiter_character)[3]);
     }
@@ -202,6 +217,77 @@ function parseInputFromTextAndContinue() {
     // now that our inputs are parsed, pass into targetFromNearestNeighbor.
     targetFromNearestNeighbor(inputX, inputY, inputZ);
 
+}
+
+// adds a specified coordinate to a preexisting spreadsheet of data.
+function addInputToSheet() {
+
+    let dataset = getOrSetSheet("get");
+
+    // Parse input based on Cogo Format + Delimiter
+    let cogo_input_text = document.getElementById("cogo_input");
+    let cogo_input_value = cogo_input_text.value;
+
+    let cogo_format_text = document.getElementById("cogo_format");
+    let cogo_format_value = cogo_format_text.value;
+
+    let cogo_format_set_text = document.getElementById("cogo_format_set");
+    let cogo_format_set_value = cogo_format_set_text.value;
+    
+    let delimiter_format_label = document.getElementById("delimiter");
+    let delimiter_value = delimiter_format_label.value;
+
+    // Break out of the function if we try to add a coordinate incorrectly.
+    if (cogo_format_set_value !== cogo_format_value) {
+
+        alert("Error: Input format does not match.");
+        return;
+
+    } else {
+
+        // Establish Character Definitions for Delimiter Labels
+        let inputP, inputX, inputY, inputZ, inputD;
+        let delimiter_character;
+
+        if (delimiter_value == "Comma") delimiter_character = ","
+        if (delimiter_value == "Space") delimiter_character = " "
+        if (delimiter_value == "Colon") delimiter_character = ":"
+        if (delimiter_value == "Semicolon") delimiter_character = ";"	
+
+        // Parse input based on Cogo Format + Delimiter, then add to our dataset.
+        if(cogo_format_value == "XYZ") {
+            inputX = String(cogo_input_value.split(delimiter_character)[0]); 
+            inputY = String(cogo_input_value.split(delimiter_character)[1]);
+            inputZ = String(cogo_input_value.split(delimiter_character)[2]);
+
+            dataset.addData({0:inputX, 1:inputY, 2:inputZ}, false);
+        }
+
+        if(cogo_format_value == "PENZD") {
+            inputP = String(cogo_input_value.split(delimiter_character)[0]);
+            inputX = String(cogo_input_value.split(delimiter_character)[1]); 
+            inputY = String(cogo_input_value.split(delimiter_character)[2]);
+            inputZ = String(cogo_input_value.split(delimiter_character)[3]);
+            inputD = String(cogo_input_value.split(delimiter_character)[4]);
+
+            // make a tabulator tableName.addData() call to pass our parsed data into our spreadsheet.
+            dataset.addData({0:inputP,1:inputX,2:inputY,3:inputZ,4:inputD}, false);
+            console.log(dataset.getData());
+        }  
+
+        if(cogo_format_value == "PNEZD") {
+            inputP = String(cogo_input_value.split(delimiter_character)[0]);
+            inputX = String(cogo_input_value.split(delimiter_character)[2]); 
+            inputY = String(cogo_input_value.split(delimiter_character)[1]);
+            inputZ = String(cogo_input_value.split(delimiter_character)[3]);
+            inputD = String(cogo_input_value.split(delimiter_character)[4]);
+
+            dataset.addData({0:inputP,1:inputY,2:inputX,3:inputZ,4:inputD}, false);
+        }
+
+    }
+    // debug
+    //console.log(getOrSetSheet("get"));
 }
 
 // creates a dataset of nearest neighbor nodes from the given coordinate sorted from closest to farthest; accounts for the entire tour.
@@ -319,7 +405,7 @@ function targetFromNearestNeighbor(E, N, Z) {
 }
 
 // handoff function sets the input into a global object, or gets this information and provides it.
-// when setting, provide all three inputs. when getting, only provide the first: ignore the last two.
+// when setting array, provide all three inputs. when getting, only provide the first: ignore the last two.
 function getOrSetNodes(type, pos = 0, arr = []) {
 
     if (type === "set") {
@@ -335,6 +421,24 @@ function getOrSetNodes(type, pos = 0, arr = []) {
         return dataHandoff.arrayOfNodes;
     } else if (type === "getPos") {
         return dataHandoff.setupPosition;
+    }
+
+}
+
+// handoff function sets the input into a global object, or gets this information and provides it.
+// when setting sheet, provide both inputs. when getting, only provide the first.
+function getOrSetSheet(type, sheet = null) {
+
+    // populate our variable with an array of objects, aka our spreadsheet, if we are setting.
+    if (type === "set") {
+
+        dataSheet = sheet;
+
+    // return our spreadsheet if we are getting.
+    } else if (type === "get") {
+
+        return dataSheet;
+
     }
 
 }

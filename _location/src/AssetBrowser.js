@@ -28,6 +28,9 @@ function disableCrosshair() {
 // parses CSV file of coordinates.
 function parseFileAndContinue() {
 
+    let convertedOutput = new Array(); // empty array for later
+    let arrToObj; // empty var for later that will become an object
+
     // papa parse modified config object: see https://www.papaparse.com/docs#config
     // this tells papa parse how to treat the file, but the code inside complete: isn't executed until Papa.parse() is called somewhere.
     let config = {
@@ -44,18 +47,102 @@ function parseFileAndContinue() {
         comments: false,
         step: undefined,
         // once the data is parsed (Papa.parse()), tell papa parse what to do with it. we have to do this inside of this 'complete' object function. 
+        // the conversion below is more or less as follows: papa parse converts csv to object of arrays -> convert to array of objects -> turn this into a spreadsheet -> feed this into our nearest neighbor calculation.
         complete: function(output) {
+
+            // debug
+            // console.log(output);
+
+            // differ how we populate our objects based on cogo point type (PENZD, PNEZD, XYZ)
+            switch (cogo_format_value) {
+                case "PENZD": 
+                    // debug
+                    //console.log(String(e[1][0]) + " converted from array to object.");
+
+                    // for every data entries array contained within each parsed object papa parse creates, do the following.
+                    Object.entries(output.data).forEach((e) => {
+                        // store our PENZD data in a key-value object instead of an array so that tabulator can automatically parse headers for it.
+                        arrToObj = {
+                            P: e[1][0],
+                            E: e[1][1],
+                            N: e[1][2],
+                            Z: e[1][3],
+                            D: e[1][4],
+                        }
+                        // push each object to an aray that will hold them all.
+                        convertedOutput.push(arrToObj);
+                    });
+                    break;
+                case "PNEZD":
+                    // for every data entries array contained within each parsed object papa parse creates, do the following.
+                    Object.entries(output.data).forEach((e) => {
+                        // store our PNEZD data in a key-value object instead of an array so that tabulator can automatically parse headers for it.
+                        arrToObj = {
+                            P: e[1][0],
+                            N: e[1][1],
+                            E: e[1][2],
+                            Z: e[1][3],
+                            D: e[1][4],
+                        }
+                        // push each object to an aray that will hold them all.
+                        convertedOutput.push(arrToObj);
+                    });
+                    break;
+                case "XYZ":
+                    // for every data entries array contained within each parsed object papa parse creates, do the following.
+                    Object.entries(output.data).forEach((e) => {
+                        // store our XYZ data in a key-value object instead of an array so that tabulator can automatically parse headers for it.
+                        arrToObj = {
+                            X: e[1][0],
+                            Y: e[1][1],
+                            Z: e[1][2],
+                        }
+                        // push each object to an aray that will hold them all.
+                        convertedOutput.push(arrToObj);
+                    });
+                    break;
+                default: // default to PENZD if nothing is provided somehow
+                    // for every data entries array contained within each parsed object papa parse creates, do the following.
+                    Object.entries(output.data).forEach((e) => {
+                        // store our PENZD data in a key-value object instead of an array so that tabulator can automatically parse headers for it.
+                        arrToObj = {
+                            P: e[1][0],
+                            E: e[1][1],
+                            N: e[1][2],
+                            Z: e[1][3],
+                            D: e[1][4],
+                        }
+                        // push each object to an aray that will hold them all.
+                        convertedOutput.push(arrToObj);
+                    });
+            }
+            //debug
+            // console.log(convertedOutput);
 
             // use tabulator to take our papa parse data and display it in a table that we configure in a specific way and specific location.
             // see tabulator docs: http://tabulator.info/docs/4.9
             let dataTable = new Tabulator("#input_table", { // tell tabulator to put the table in an element with this ID, in our case a div from earlier.
-                data: output.data, // set the spreadsheet data to be our parsed data within the object papa parse created.
+
+                data: convertedOutput, // set the spreadsheet data to be our array of objects that hold our converted papa parse csv coordinate data.
+                // data: output.data,
                 autoColumns:true,
-                layout:"fitColumns", // make spreadsheet fit page size evenly
-                headerVisible:false,
-                tooltips:true,
-                selectable:"highlight", // don't let rows stay selected after clicking
-                history:true,
+                layout: "fitColumns", // make spreadsheet fit page size evenly
+                headerVisible: true,
+                tooltips: true,
+                selectable: 1, // don't let rows stay selected after clicking
+                history: true,
+
+                autoColumnsDefinitions:function(definitions) {
+
+                    // definitions - array of column definition objects
+                    definitions.forEach((column) => {
+                        column.headerFilter = true;
+                        column.editor = "input";
+                    });
+
+                    return definitions;
+
+                },
 
                 // create an event listener (e) for any given row. if we click on that row, parse only the data points (ENZ,XYZ,etc) and pass them into parseInputfromSheetAndContinue().
                 rowClick:function(e, row) {
@@ -134,9 +221,9 @@ function parseInputfromSheetAndContinue(cogo_row, type) {
 
         // if PENZD, sort in the order given after slicing off P and D.
         case "PENZD":
-            let pointE_PENZD = parseFloat(positionDataXYZ[1]); //start at 1 to factor in the P.
-            let pointN_PENZD = parseFloat(positionDataXYZ[2]);
-            let pointZ_PENZD = parseFloat(positionDataXYZ[3]);
+            let pointE_PENZD = parseFloat(positionDataXYZ.E); //start at 1 to factor in the P.
+            let pointN_PENZD = parseFloat(positionDataXYZ.N);
+            let pointZ_PENZD = parseFloat(positionDataXYZ.Z);
 
             targetFromNearestNeighbor(pointE_PENZD, pointN_PENZD, pointZ_PENZD);
 
@@ -144,9 +231,9 @@ function parseInputfromSheetAndContinue(cogo_row, type) {
 
         // if PNEZD, swap N and E when passing into targetFromNearestNeighbor() after slicing P and D.
         case "PNEZD":
-            let pointN_PNEZD = parseFloat(positionDataXYZ[1]); //start at 1 to factor in the P.
-            let pointE_PNEZD = parseFloat(positionDataXYZ[2]);
-            let pointZ_PNEZD = parseFloat(positionDataXYZ[3]);
+            let pointN_PNEZD = parseFloat(positionDataXYZ.N); //start at 1 to factor in the P.
+            let pointE_PNEZD = parseFloat(positionDataXYZ.E);
+            let pointZ_PNEZD = parseFloat(positionDataXYZ.Z);
 
             targetFromNearestNeighbor(pointE_PNEZD, pointN_PNEZD, pointZ_PNEZD);
 
@@ -154,9 +241,9 @@ function parseInputfromSheetAndContinue(cogo_row, type) {
 
         // if XYZ don't slice, just pass forward.
         case "XYZ":
-            let pointX_XYZ = parseFloat(positionDataXYZ[0]);
-            let pointY_XYZ = parseFloat(positionDataXYZ[1]);
-            let pointZ_XYZ = parseFloat(positionDataXYZ[2]);
+            let pointX_XYZ = parseFloat(positionDataXYZ.X);
+            let pointY_XYZ = parseFloat(positionDataXYZ.Y);
+            let pointZ_XYZ = parseFloat(positionDataXYZ.Z);
 
             targetFromNearestNeighbor(pointX_XYZ, pointY_XYZ, pointZ_XYZ);
 
@@ -165,9 +252,9 @@ function parseInputfromSheetAndContinue(cogo_row, type) {
         // default to PENZD if somehow nothing is provided.
         default:
 
-            let pointE = parseFloat(positionDataXYZ[1]);
-            let pointN = parseFloat(positionDataXYZ[2]);
-            let pointZ = parseFloat(positionDataXYZ[3]);
+            let pointE = parseFloat(positionDataXYZ.E);
+            let pointN = parseFloat(positionDataXYZ.N);
+            let pointZ = parseFloat(positionDataXYZ.Z);
 
             targetFromNearestNeighbor(pointE, pointN, pointZ);
     }
@@ -213,6 +300,7 @@ function parseInputFromTextAndContinue() {
         inputY = parseFloat(cogo_input_value.split(delimiter_character)[1]);
         inputZ = parseFloat(cogo_input_value.split(delimiter_character)[3]);
     }
+    console.log(`${inputX}, ${inputY}, ${inputZ}`)
 
     // now that our inputs are parsed, pass into targetFromNearestNeighbor.
     targetFromNearestNeighbor(inputX, inputY, inputZ);
@@ -260,7 +348,7 @@ function addInputToSheet() {
             inputY = String(cogo_input_value.split(delimiter_character)[1]);
             inputZ = String(cogo_input_value.split(delimiter_character)[2]);
 
-            dataset.addData({0:inputX, 1:inputY, 2:inputZ}, false);
+            dataset.addData({X:inputX, Y:inputY, Z:inputZ}, false);
         }
 
         if(cogo_format_value == "PENZD") {
@@ -271,7 +359,7 @@ function addInputToSheet() {
             inputD = String(cogo_input_value.split(delimiter_character)[4]);
 
             // make a tabulator tableName.addData() call to pass our parsed data into our spreadsheet.
-            dataset.addData({0:inputP,1:inputX,2:inputY,3:inputZ,4:inputD}, false);
+            dataset.addData({P:inputP,E:inputX,N:inputY,Z:inputZ,D:inputD}, false);
             console.log(dataset.getData());
         }  
 
@@ -282,7 +370,7 @@ function addInputToSheet() {
             inputZ = String(cogo_input_value.split(delimiter_character)[3]);
             inputD = String(cogo_input_value.split(delimiter_character)[4]);
 
-            dataset.addData({0:inputP,1:inputY,2:inputX,3:inputZ,4:inputD}, false);
+            dataset.addData({P:inputP,N:inputY,E:inputX,Z:inputZ,D:inputD}, false);
         }
 
     }

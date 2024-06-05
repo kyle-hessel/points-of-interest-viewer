@@ -3,26 +3,20 @@
 let dataHandoff;
 let dataSheet; // create another
 
-// load a given photo360
-function loadPhoto360(){
-    document.getElementById("photo360").src = document.getElementById("inputurl").value;
+// load a given Pano2VR/Potree project.
+function loadViewer(){
+    document.getElementById("pviewer").src = document.getElementById("inputurl").value;
 }
-
-/* not currently being used
-function updateCoordinates(){
-document.getElementById("currentcoordinates").value = (String.prototype.concat( (String((potree.viewer.scene.getActiveCamera().position.x).toFixed(4))),",",(String((potree.viewer.scene.getActiveCamera().position.y).toFixed(4))),",",(String((potree.viewer.scene.getActiveCamera().position.z).toFixed(4))) ));
-}
-*/
 
 // turn on the crosshair in the iframe
 function enableCrosshair() {
-    photo360.pano.setVariableValue("crosshair_display",true);
-    photo360.pano.setVariableValue("compass_visible",true);
+    pviewer.pano.setVariableValue("crosshair_display",true);
+    pviewer.pano.setVariableValue("compass_visible",true);
 }
 
 // turn off the crosshair in the iframe
 function disableCrosshair() {
-    photo360.pano.setVariableValue("crosshair_display",false);
+    pviewer.pano.setVariableValue("crosshair_display",false);
 }
 
 // parses CSV file of coordinates.
@@ -49,9 +43,6 @@ function parseFileAndContinue() {
         // once the data is parsed (Papa.parse()), tell papa parse what to do with it. we have to do this inside of this 'complete' object function. 
         // the conversion below is more or less as follows: papa parse converts csv to object of arrays -> convert to array of objects -> turn this into a spreadsheet -> feed this into our nearest neighbor calculation.
         complete: function(output) {
-
-            // debug
-            // console.log(output);
 
             // differ how we populate our objects based on cogo point type (PENZD, PNEZD, XYZ)
             switch (cogo_format_value) {
@@ -116,8 +107,6 @@ function parseFileAndContinue() {
                         convertedOutput.push(arrToObj);
                     });
             }
-            //debug
-            // console.log(convertedOutput);
 
             // use tabulator to take our papa parse data and display it in a table that we configure in a specific way and specific location.
             // see tabulator docs: http://tabulator.info/docs/4.9
@@ -152,21 +141,11 @@ function parseFileAndContinue() {
 
                     // pass in our cogo point data into our parser function along with the type of cogo point (PENZD, PNEZD, XYZ, etc)
                     parseInputfromSheetAndContinue(selectedPoint, cogo_format_value);
-
-                    // debug
-                    //console.log(selectedPoint);
                 }
             });
 
             // pass our data table into a function that will then store it in a global context so we can work with it dynamically after creation.
             getOrSetSheet("set", dataTable);
-
-            // debug
-            // console.log(dataTable);
-            // console.log (typeof dataTable);
-
-            // console.log(getOrSetSheet("get"));
-            // console.log(typeof getOrSetSheet("get"));
 
         },
         error: undefined, // the rest of this object holds default papa parse settings. see docs to modify.
@@ -186,12 +165,6 @@ function parseFileAndContinue() {
     // establish inputs: get filename from our input field.
     let cogo_input_field = document.getElementById("csv_importer");
     let cogo_input_text = cogo_input_field.files[0]; // don't do files[x].name, papa parse expects an object. (or.. blob in this case)
-
-    // debug
-    //console.log(cogo_input_field);
-    //console.log(cogo_input_field.files);
-    //console.log(cogo_input_text);
-    //console.log(cogo_input_text.name);
     
     // store our formatting type (e.g. PENZD)
     // *** AS OF NOW PENZD is the default, make this functionality do something later: preferably in the complete: key-value in the papa parse 'config' obj above.
@@ -211,9 +184,6 @@ function parseInputfromSheetAndContinue(cogo_row, type) {
 
     //let positionDataCogo = cogo_row.slice(1, 4); //breaks rows of objects since they can't be sliced, don't actually need to slice this.
     let positionDataXYZ = cogo_row;
-
-    // debug
-    //console.log(positionDataCogo);
 
     // enact different behaviors based on the type of cogo point
     // js didn't like using the same variable names in these cases, so I had to make different sets for each.
@@ -408,9 +378,6 @@ function addInputToSheet() {
 
         dataset.addData({ P:inputP, N:inputY, E:inputX, Z:inputZ, D:inputD }, false);
     }
-
-    // debug
-    //console.log(getOrSetSheet("get"));
 }
 
 // creates a dataset of nearest neighbor nodes from the given coordinate sorted from closest to farthest; accounts for the entire tour.
@@ -425,14 +392,14 @@ function targetFromNearestNeighbor(E, N, Z) {
     
     // determine northing, easting, and elevation distances from the input (coordinates) to the destination (node) to determine which node is the closest. store info in an object.
     // do this for every node.
-    for (i = 0; i < photo360.pano.getNodeIds().length; i = i + 1) {
+    for (i = 0; i < pviewer.pano.getNodeIds().length; i = i + 1) {
 
-        let thisNode = photo360.pano.getNodeIds()[i];
-        let destN = parseFloat(photo360.pano.getNodeUserdata(thisNode).copyright); // store node northing in an easy-to-read variable
-        let destE = parseFloat(photo360.pano.getNodeUserdata(thisNode).source); // store node easting in an easy-to-read variable
-        let destZ = parseFloat(photo360.pano.getNodeUserdata(thisNode).author); // store node elevation in an easy-to-read variable
-        let nodeTitle = photo360.pano.getNodeUserdata(thisNode).title;
-        let customID = photo360.pano.getNodeUserdata(thisNode).customnodeid;
+        let thisNode = pviewer.pano.getNodeIds()[i];
+        let destN = parseFloat(pviewer.pano.getNodeUserdata(thisNode).copyright); // store node northing in an easy-to-read variable
+        let destE = parseFloat(pviewer.pano.getNodeUserdata(thisNode).source); // store node easting in an easy-to-read variable
+        let destZ = parseFloat(pviewer.pano.getNodeUserdata(thisNode).author); // store node elevation in an easy-to-read variable
+        let nodeTitle = pviewer.pano.getNodeUserdata(thisNode).title;
+        let customID = pviewer.pano.getNodeUserdata(thisNode).customnodeid;
 
         // calculate northing distance from input Y
         let diffN = N - destN;
@@ -487,29 +454,14 @@ function targetFromNearestNeighbor(E, N, Z) {
     let nearestNeighborEasting = String(distances[0].easting);
     let nearestNeighborElevation = String(distances[0].elevation);
 
-    // // print that node ID. this is our nearest neighbor!
-    // console.log("Nearest node: " + nearestNeighborNode);
-
-    // // print its title, coordinates, etc, too
-    // console.log("Custom ID: " + nearestNeighborCustom);
-    // console.log("Title: " + nearestNeighborTitle);
-    // console.log("Distance from input: " + nearestNeighborDistance);
-    // console.log("Distance (2D only): " + nearestNeighborDistance2D);
-    // console.log("Northing: " + nearestNeighborNorthing);
-    // console.log("Easting: " + nearestNeighborEasting);
-    // console.log("Elevation: " + nearestNeighborElevation);
-
     // Go to our nearest neighbor.
-    photo360.pano.openNext("{" + nearestNeighborNode + "}");
+    pviewer.pano.openNext("{" + nearestNeighborNode + "}");
 
     // set our current distances array index to 0 since we're at the nearest neighbor (used for navigating to other neighbors later).
     currentPos = 0;
 
     // calculate pan and tilt for nearest neighbor so that we aim at our input from this node.
     calculatePanTilt(distances, currentPos);
-
-    // debug
-    //console.log(distances);
 
     // pass our currentPosition (the nearest neighbor) and our sorted distances array containing every node into a getter/setter hybrid function.
     // this function will set these values (getOrSetNodes("set", positionInArray, array) and store them in a global object other functions can talk to.
@@ -519,11 +471,11 @@ function targetFromNearestNeighbor(E, N, Z) {
     updateDistanceDisplay();
 
     // move potree to our nearest neighbor node if we want
-    //photo360.potree.viewer.scene.view.position.set(distances[0].easting, distances[0].northing, distances[0].elevation);
+    //pviewer.potree.viewer.scene.view.position.set(distances[0].easting, distances[0].northing, distances[0].elevation);
 
     // orient potree to look at what p2vr is looking at, regardless of if we're at the same position or not.
     // NOTE: if potree hasn't been loaded yet, function will error out early if this isn't at the bottom.
-    photo360.potree.viewer.scene.view.lookAt(E, N, Z);
+    pviewer.potree.viewer.scene.view.lookAt(E, N, Z);
 
 }
 
@@ -583,7 +535,7 @@ function nextNearestNeighbor() {
         getOrSetNodes("set", currentPos, distances);
 
         // go to the node that matches that array position.
-        photo360.pano.openNext("{" + String(distances[currentPos].node) + "}");
+        pviewer.pano.openNext("{" + String(distances[currentPos].node) + "}");
 
         // orient this node to the input coordinates.
         calculatePanTilt(distances, currentPos);
@@ -609,7 +561,7 @@ function nextFurthestNeighbor() {
         getOrSetNodes("set", currentPos, distances);
 
         // go to the node that matches that array position.
-        photo360.pano.openNext("{" + String(distances[currentPos].node) + "}");
+        pviewer.pano.openNext("{" + String(distances[currentPos].node) + "}");
 
         // orient this node to the input coordinates.
         calculatePanTilt(distances, currentPos);
@@ -634,8 +586,8 @@ function calculatePanTilt(array, pos) {
     let calcTilt = (Math.atan2(deltaZ, distance2D) * (180 / Math.PI));
 
     // 360: set pano pan and tilt to look at our input from nearest neighbor.
-    photo360.pano.setPanNorth(targetPan);
-    photo360.pano.setTilt(calcTilt);
+    pviewer.pano.setPanNorth(targetPan);
+    pviewer.pano.setTilt(calcTilt);
 
 }
 

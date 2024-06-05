@@ -11,19 +11,19 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;0,900;1,400&display=swap" rel="stylesheet">
-		<title>Photo360 Asset Browser Development Environment</title>
+		<title>Points of Interest Viewer</title>
 	</head>
 
 	<body>
 
-        <!--load SR4 by default-->
-        <p><iframe src="https://photo360.pennoni.com/projects/sr4/index.html" name="photo360" id="photo360" frameBorder="no" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
+        <!--load a sample Potree project by default-->
+        <p><iframe src="http://potree.org/potree/examples/viewer.html" name="pviewer" id="pviewer" frameBorder="no" scrolling="no" allowfullscreen="allowfullscreen"></iframe></p>
 
         <div name="right_panel" id="right_panel">
-            <p id="right_panel_title">Photo360 Asset Browser</p>
+            <p id="right_panel_title">Points of Interest Viewer</p>
 
-            <!--input a new Photo360 to load it: populate this box with SR4 by default-->
-            <p class="right_panel_subheading">Photo360 URL:</p><input type="text" id="inputurl" value="https://photo360.pennoni.com/projects/sr4/index.html"><button type="button" class="button" onClick="loadPhoto360();">Load</button>
+            <!--input a new Potree or Pano2VR instance to load it: a sample Potree project by default-->
+            <p class="right_panel_subheading">URL:</p><input type="text" id="inputurl" value="http://potree.org/potree/examples/viewer.html"><button type="button" class="button" onClick="loadViewer();">Load</button>
 
 
             <!--turn the crosshair in the iframe on and off with event listeners.-->
@@ -91,31 +91,8 @@
                     <option value="Colon">Colon</option>
                 </select>
             </div>
-
-            <br>
-            <br>
-            <br>
-
-            <img src="img/Pennoni_Logo_White-01-1.svg" id="logo">
-
-            <br>
-            <br>
-            <br>
-
         </div>
 
-
-        <!-- old coordinate inputs
-        <b><u>Alt:</u></b>
-        <br>
-        <br>
-
-        <b>Target:   X: </b><input type="text" id="inputtargetx" style="width: 100px" value="1295837.927"> 
-        <b>Y: </b><input type="text" id="inputtargety" style="width: 100px" value="469850.7971"> 
-        <b>Z: </b><input type="text" id="inputtargetz" style="width: 100px" value="172.16">
-
-        <button onclick="targetFromNearestNeighbor(0, document.getElementById('inputtargetx').value, document.getElementById('inputtargety').value, document.getElementById('inputtargetz').value);">Target</button> &nbsp;
-        -->
         &nbsp;
         &nbsp;
         &nbsp;
